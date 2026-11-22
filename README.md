@@ -100,7 +100,8 @@ make test
 systemd-analyze verify packaging/systemd/presence-demo.service
 ```
 
-Until that PR is merged, its review branch is `feature/demo-service-gate`. Only reviewers who intentionally want the **unmerged code** should check out that branch. The examples in this README describe the intended merged release.
+Until that PR is merged, its review branch is `feature/demo-service-gate`. Only reviewers who intentionally want the **unmerged code** should check out that branch. The examples in this README describe the milestone after merge; until then,
+only the draft PR branch includes the demo features.
 
 Expected: all Python tests pass, and `systemd-analyze verify` reports no warnings for the demo unit.
 

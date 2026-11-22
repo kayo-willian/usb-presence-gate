@@ -1,14 +1,15 @@
 # Disposable gate safety boundary
 
-This draft adds a deliberately restricted **demonstration**, not generic
-service/socket enforcement. The controlled unit is hardcoded to
+The completed experimental milestone includes a deliberately restricted
+**demonstration**, not generic service/socket enforcement. The controlled unit is hardcoded to
 `presence-demo.service`, installed as a root-owned project file with
-`ConditionPathExists=/run/usbgate/demo-grant`. The process runs under a transient systemd-managed identity
-(`DynamicUser=yes`) and does no networking or application work.
-This replaced the original `User=nobody` configuration after the maintainer's
-Debian 13 `systemd-analyze verify` output warned that the shared nobody
-account is unsafe for this purpose. The maintainer subsequently reran `systemd-analyze verify` on the target
-Debian 13 notebook after this change; it completed without warnings.
+`ConditionPathExists=/run/usbgate/demo-grant`. The process runs under
+a transient systemd-managed identity (`DynamicUser=yes`) and does no
+networking or application work.
+This replaced the original `User=nobody` configuration after the
+maintainer's Debian 13 `systemd-analyze verify` check warned that the
+shared nobody account was unsafe. The updated unit passed a new static
+verification on that notebook with no warnings.
 
 The demo enrollment accepts only one currently connected USB storage device
 with a non-empty, unambiguous serial-based descriptor fingerprint. Descriptor
@@ -53,7 +54,6 @@ on this draft branch:
   timer `active`.
 - After physical reconnection, `demo status` again reported the grant
   and service active, with systemd independently reporting `active`.
-
 - With the demo disabled, the maintainer tried to start
   `presence-demo.service` manually; the service remained inactive and
   the grant absent (`state=enrolled`).
@@ -72,12 +72,13 @@ on this draft branch:
   subsequent shell test confirmed `/usr/local/sbin/usbgate` absent. The
   backup `/etc/usbgate/demo.json.disabled` was intentionally retained.
 
-This is **evidence of the basic happy path**, not proof of full security.
+These are **hardware observations, not proof of authentication or a hard
+security boundary**.
 No raw serial, actual fingerprint or hostname is published here. The
-exact stop latency, whether udev or the timer performed each transition,
-quick reconnect before grace expiry, timer loss, corrupt-policy recovery,
-removal of policy backup data and the distinction between udev/timer triggers
-remain unverified.
+exact stop latency, whether udev or the timer initiated each transition,
+quick reconnect before grace expiry, timer loss and corrupt-policy recovery
+remain unverified. Backup deletion is deliberately a separate operator
+choice, not part of the manifest-based uninstall.
 
 ## Tests not yet established on the physical host
 
