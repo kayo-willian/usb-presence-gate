@@ -7,8 +7,8 @@ On 2026-11-22 the maintainer reported Debian GNU/Linux 13.8 (trixie), Python 3.1
 | H1 — python3 is installed and reports version 3.13.5 | hardware-verified | Maintainer's notebook report above. |
 | H1 — `tomllib` import and `CLOCK_BOOTTIME` read | hardware-verified | See the notebook transcript below. |
 | USB observation, removal and grace | hardware-verified | Maintainer observed the device as present, absence pending, absent after 10 seconds, and returned; journald confirmed the transitions. Trigger isolation not yet measured. |
-| Cold boot with USB and rapid reconnection | untested | Run separately with terminal evidence; do not infer these from the measured removal and return. |
-| Service and socket closure | untested | Verify both states after removal, including explicit stop if propagation leaves a member active. |
+| Reboot with the USB already connected | hardware-verified | After a physical reboot, the demo service and timer returned active with the USB still connected and SSH remained available. |\n| Rapid reconnection within the 10-second grace | untested | Requires a separate physical timing test; not inferred from a later reconnect. |
+| Bundled disposable `presence-demo.service` closure | hardware-verified | Physical USB removal stopped the bundled demo after observation; a normal manual start with grant absent left it inactive. |\n| Arbitrary service/socket closure | not implemented | The CLI has no general enrollment or socket enforcement. |
 
 ## H1 notebook evidence
 

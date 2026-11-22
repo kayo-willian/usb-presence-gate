@@ -1,3 +1,5 @@
+> **Historical architecture research, not current operational instructions.** The implemented 2026-11-22 milestone deliberately supports only USB observation and the fixed disposable `presence-demo.service`. See [README](../README.md) and [current scope](completion-plan.md).
+
 # Phase 0 design review
 
 **Historical review.** The current MVP covers services and sockets. G1 and experiments S3/S4 are retired. The [maintainer instructions](../AGENTS.md) define the current scope, and the [lifecycle](lifecycle.md) records the selected gate and trigger.

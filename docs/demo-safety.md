@@ -79,16 +79,21 @@ quick reconnect before grace expiry, timer loss, corrupt-policy recovery,
 removal of policy backup data and the distinction between udev/timer triggers
 remain unverified.
 
-## Validation still needed on the real notebook
+## Tests not yet established on the physical host
 
-1. Run new unit/CI tests.
-2. Verify inert install and a clean, refused unconfigured demo.
-3. Verify explicit enrollment/enable of the disposable unit only.
-4. Verify physical unplug with grace, reconnection and repeated worker cycles.
-5. Confirm manual start while grant absent cannot run the demo.
-6. Verify fail-closed behavior on timer loss and invalid applied policy.
-7. CLI reset remains unit-tested but has not been demonstrated physically;
-   policy backup retention is intentional and documented.
-8. Measure systemd timer/udev path separately; update published evidence.
+These limitations remain even though the demonstration's core lifecycle
+was physically observed:
 
-These are tests to perform, **not claims of having performed them**.
+- Quick USB reconnection **inside** the grace interval.
+- A missed udev event with proven timer-only fallback.
+- Corrupted policy, deleted timer, repeated manager failure, forced crash
+  and hostile cloned-descriptor behavior on the physical notebook.
+- A guaranteed maximum time between physical removal and process stop.
+- A CLI `demo reset` after a normal `demo disable` (unit-tested only).
+- Deployment to or protection of any real existing application, or
+  multiple units/sockets (not implemented).
+
+The backup created by manual recovery is deliberately retained until
+the administrator separately inspects and deletes it. The documented
+physical source-based uninstall did not claim to purge that backup.
+Physical acceptance evidence is not a security certification.

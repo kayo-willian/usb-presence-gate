@@ -1,3 +1,5 @@
+> **Historical design proposal, not the implemented demo lifecycle.** This document describes an earlier generic gate architecture (including BindsTo/After and multi-policy ideas) that was not implemented in the finished experimental milestone. For real commands and supported behavior see [README](../README.md), [demo safety](demo-safety.md) and [recovery](recovery.md).
+
 # Lifecycle outline
 
 ## MVP design choices

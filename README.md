@@ -51,7 +51,7 @@ USB stick (descriptors only; no filesystem access)
       (disposable sleep process)
 ```
 
-An install is **inert**: it copies manifest-owned files and creates the demo unit, but does **not** activate monitoring, enroll the USB stick, start the demo, or modify unrelated services. Observation is opt-in; the demo gate requires a **second explicit opt-in**.
+Installation is **inert**: it copies manifest-owned files and creates the demo unit, but does **not** activate monitoring, enroll the USB stick, start the demo, or modify unrelated services. Observation is opt-in; the demo gate requires a **second explicit opt-in**.
 
 **Important state distinction:** `demo status` may show `state: enabled` while the service is `inactive`. That means the policy is armed, **not** that the USB is present or that the service is running.
 
@@ -145,7 +145,8 @@ Expected: `Observation enabled; no service control.` and an `active` timer. In o
 First, paste **your own** 12-character fingerprint when prompted:
 
 ```sh
-read -r -p "Paste the 12-character fingerprint shown by scan: " FINGERPRINT
+printf "Paste the 12-character fingerprint shown by scan: "
+read -r FINGERPRINT
 sudo /usr/local/sbin/usbgate demo enroll "$FINGERPRINT"
 sudo /usr/local/sbin/usbgate demo status
 ```
@@ -257,7 +258,13 @@ The installer removes only the files recorded in its hash manifest, not backups 
 - `/run/usbgate/observe.json` and `/run/usbgate/lock` may remain until reboot or manual inspection.
 - Empty project directories may remain.
 
-For a previously verified, fully uninstalled instance only, inspect any leftovers and delete **only known project-owned files**. Never delete shared system directories or unrelated contents.
+For a previously verified, fully uninstalled instance only, inspect any leftovers and delete **only known project-owned files**. If the saved policy is no longer needed, this exact command removes that backup:
+
+```sh
+sudo rm -f /etc/usbgate/demo.json.disabled
+```
+
+Use it only after verifying it is your own recovery backup. It does not remove other files, the installed program or the Git checkout. Never delete shared system directories or unrelated contents.
 
 ## Emergency recovery without Python
 
