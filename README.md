@@ -1,6 +1,6 @@
 # usb-presence-gate
 
-A small, lightweight **USB presence observer** for headless Debian 13. This project explores physical-presence gating for selected noncritical services. **USB identifiers are clonable and do not authenticate a person.** The current base PR is **observation-only**: it never controls services, creates policy gates, changes SSH, or mounts USB media.
+A small, lightweight USB presence observer and **opt-in disposable service gate** for headless Debian 13. This project explores physical-presence gating for selected noncritical services. **USB identifiers are clonable and do not authenticate a person.** The first release is observation-only; the next draft adds control of **one project-owned disposable service** only. It does not provide general service enrollment, change SSH or mount USB media.
 
 **Validation (2026-11-22):** 10 initial unit tests passed on the physical Debian 13 notebook. The maintainer also verified USB scanning, installation, timer activation, physical removal, 10-second absence grace, reconnect, journald events, disable and uninstall. The USB event path was verified end-to-end, but **udev-triggered versus timer-triggered reconciliation was not isolated**. See [hardware validation](docs/hardware-validation-2026-11-22.md) for precise evidence and remaining limitations. The expanded offline regression suite is verified by GitHub Actions on the feature branch; changed installation behavior still needs fresh hardware verification.
 
@@ -114,6 +114,64 @@ PYTHONPATH=src python3 -m usbgate.cli inspect-unit demo-gate.service
 The candidate unit must exist in `/etc/systemd/system`. Avoid SSH, network,
 firewall, Docker, authentication and other essential units. The gating roadmap
 and remaining safety checks are in [completion plan](docs/completion-plan.md).
+
+## Disposable demonstration gate (new draft; untested on hardware)
+
+The new opt-in demo controls only `presence-demo.service`, a project-owned
+service that runs an idle `/usr/bin/sleep infinity` process as `nobody`.
+It never controls SSH, the network, Docker or a user service. Device identifiers
+are easily imitated; this is a presence lab, **not authentication**.
+
+This draft must first pass offline tests and inspection. **Do not enable it on
+the physical notebook until after review.** Once approved, the planned lab is:
+
+```sh
+# On the dedicated Debian notebook, from this feature branch:
+make test
+sudo make install
+sudo systemctl daemon-reload
+sudo /usr/local/sbin/usbgate monitor enable
+/usr/local/sbin/usbgate scan
+sudo /usr/local/sbin/usbgate demo enroll REPLACE_WITH_12_CHARACTER_FINGERPRINT
+sudo /usr/local/sbin/usbgate demo enable
+sudo /usr/local/sbin/usbgate demo status
+sudo systemctl status presence-demo.service --no-pager
+```
+
+Physically remove the USB stick, allow 10 seconds of grace, verify the demo
+service stops, then reconnect and verify it starts again. Check journald.
+Record exactly what happened; these results are **not yet hardware-verified**.
+
+```sh
+sudo /usr/local/sbin/usbgate demo disable
+sudo /usr/local/sbin/usbgate demo reset
+sudo /usr/local/sbin/usbgate monitor disable
+sudo make uninstall
+sudo systemctl daemon-reload
+```
+
+`demo disable` stops only the disposable demo. `monitor disable` refuses to
+run while demo control is enabled. Uninstallation refuses remaining enrollment.
+
+### Manual demo recovery without Python or the USB stick
+
+When demo control is enabled, execute from a local console if SSH is impaired.
+The commands affect only the **project-owned** demo service and rule:
+
+```sh
+sudo systemctl disable --now usbgate-reconcile.timer
+sudo systemctl stop usbgate-reconcile.service
+sudo rm -f /etc/udev/rules.d/70-usbgate.rules
+sudo udevadm control --reload
+sudo rm -f /run/usbgate/demo-grant
+sudo systemctl stop presence-demo.service
+sudo mv /etc/usbgate/demo.json /etc/usbgate/demo.json.disabled
+sudo systemctl daemon-reload
+```
+
+Keep the policy backup for inspection. If a command fails, investigate before
+considering recovery complete. This demo does not claim provable stop latency
+under kernel failure, missed events or a broken systemd manager.
 
 ## Technical notes
 

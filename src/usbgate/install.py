@@ -16,7 +16,9 @@ FILES = {
     "src/usbgate/cli.py": "/usr/local/lib/usbgate/usbgate/cli.py",
     "src/usbgate/observe.py": "/usr/local/lib/usbgate/usbgate/observe.py",
     "src/usbgate/policy.py": "/usr/local/lib/usbgate/usbgate/policy.py",
+    "src/usbgate/demo.py": "/usr/local/lib/usbgate/usbgate/demo.py",
     "packaging/systemd/usbgate-reconcile.service": "/etc/systemd/system/usbgate-reconcile.service",
+    "packaging/systemd/presence-demo.service": "/etc/systemd/system/presence-demo.service",
     "packaging/systemd/usbgate-reconcile.timer": "/etc/systemd/system/usbgate-reconcile.timer",
     "packaging/udev/70-usbgate.rules": "/usr/local/lib/usbgate/packaging/udev/70-usbgate.rules",
 }
@@ -87,10 +89,13 @@ def uninstall(root):
     if data.get("schema_version") != 1 or set(data.get("files", {})) != set(FILES.values()):
         raise RuntimeError("invalid manifest; refusing removal")
     if root == Path("/"):
+        from .demo import POLICY, GRANT
+        if POLICY.exists() or POLICY.is_symlink() or GRANT.exists() or GRANT.is_symlink():
+            raise RuntimeError("disable and reset demo enrollment before uninstall")
         rule = Path("/etc/udev/rules.d/70-usbgate.rules")
         if rule.exists() or rule.is_symlink():
             raise RuntimeError("disable monitor before uninstall")
-        for name in ("usbgate-reconcile.timer", "usbgate-reconcile.service"):
+        for name in ("usbgate-reconcile.timer", "usbgate-reconcile.service", "presence-demo.service"):
             result = subprocess.run(["/usr/bin/systemctl", "is-active", name],
                                     capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
