@@ -37,7 +37,7 @@ def read_attribute(path):
 def devices(root=SYSFS):
     """Only sysfs descriptors; never mount or open a USB filesystem."""
     try:
-        entries = list(root.iterdir())[:512]
+        entries = sorted(root.iterdir(), key=lambda item: item.name)[:512]
     except OSError:
         return {}
     classes = {}
@@ -56,6 +56,18 @@ def devices(root=SYSFS):
         if not re.fullmatch(r"[a-fA-F0-9]{4}", vid) or not re.fullmatch(r"[a-fA-F0-9]{4}", pid):
             continue
         key = hashlib.sha256(f"{vid.lower()}:{pid.lower()}:{serial}".encode("ascii")).hexdigest()[:12]
+        if key in result:
+            # One descriptor fingerprint cannot prove which physical device is present.
+            # Keep the group visible, but never claim a unique identity.
+            existing = result[key]
+            if existing["assurance"] != "ambiguous":
+                existing["buses"] = [existing.pop("bus")]
+                existing["assurance"] = "ambiguous"
+            existing["buses"].append(entry.name)
+            existing["buses"].sort()
+            existing["instances"] = len(existing["buses"])
+            existing["classes"] = sorted(set(existing["classes"]) | classes.get(entry.name, set()))
+            continue
         result[key] = {"bus": entry.name, "vid_pid": f"{vid.lower()}:{pid.lower()}",
                        "classes": sorted(classes.get(entry.name, set())),
                        "assurance": "identifier-only" if serial else "weak"}

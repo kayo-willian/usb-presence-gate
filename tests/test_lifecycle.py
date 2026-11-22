@@ -65,3 +65,98 @@ class ObservationTests(unittest.TestCase):
                     cli.monitor(False)
             self.assertFalse(rule.exists())
             self.assertEqual(called, ["disable", "stop", "control"])
+
+
+class DeviceScanTests(unittest.TestCase):
+    @staticmethod
+    def add_usb(root, bus, serial=None, device_class="08"):
+        device = root / bus
+        device.mkdir()
+        (device / "idVendor").write_text("abcd")
+        (device / "idProduct").write_text("1234")
+        if serial is not None:
+            (device / "serial").write_text(serial)
+        interface = root / f"{bus}:1.0"
+        interface.mkdir()
+        (interface / "bInterfaceClass").write_text(device_class)
+
+    def test_duplicate_usb_identity_is_ambiguous(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.add_usb(root, "1-3", serial="fictional-serial")
+            self.add_usb(root, "1-5", serial="fictional-serial", device_class="03")
+            matches = cli.devices(root)
+            self.assertEqual(len(matches), 1)
+            item = next(iter(matches.values()))
+            self.assertEqual(item["assurance"], "ambiguous")
+            self.assertEqual(item["instances"], 2)
+            self.assertEqual(item["buses"], ["1-3", "1-5"])
+            self.assertEqual(item["classes"], ["03", "08"])
+            self.assertNotIn("bus", item)
+            self.assertNotIn("fictional-serial", str(matches))
+
+    def test_unique_and_serialless_descriptors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.add_usb(root, "1-3", serial="fictional-serial")
+            self.add_usb(root, "1-5", serial=None)
+            matches = list(cli.devices(root).values())
+            self.assertEqual(sorted(item["assurance"] for item in matches),
+                             ["identifier-only", "weak"])
+            self.assertTrue(all("bus" in item for item in matches))
+
+    def test_three_clones_remain_ambiguous(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for bus in ("1-3", "1-5", "1-7"):
+                self.add_usb(root, bus, serial="fictional-serial")
+            item = next(iter(cli.devices(root).values()))
+            self.assertEqual(item["instances"], 3)
+            self.assertEqual(item["buses"], ["1-3", "1-5", "1-7"])
+
+
+class AdditionalLifecycleTests(unittest.TestCase):
+    def test_symlink_parent_blocks_install(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "root"
+            external = Path(directory) / "external"
+            root.mkdir()
+            external.mkdir()
+            (root / "usr").symlink_to(external, target_is_directory=True)
+            with self.assertRaisesRegex(RuntimeError, "symlink parent refused"):
+                install.install(root)
+            self.assertFalse((root / "var/lib/usbgate/install-manifest.json").exists())
+            self.assertEqual(list(external.iterdir()), [])
+
+    def test_foreign_rule_is_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, rule = root / "source", root / "rule"
+            source.write_text("owned")
+            rule.write_text("foreign")
+            with patch.object(cli, "SOURCE_RULE", source), \
+                 patch.object(cli, "RULE", rule), \
+                 patch.object(cli.os, "geteuid", return_value=0), \
+                 patch.object(cli.subprocess, "run") as run:
+                with self.assertRaisesRegex(RuntimeError, "differs"):
+                    cli.monitor(True)
+                run.assert_not_called()
+            self.assertEqual(rule.read_text(), "foreign")
+
+    def test_uninstall_refuses_modified_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            install.install(root)
+            manifest = root / "var/lib/usbgate/install-manifest.json"
+            manifest.write_text('{"schema_version": 1, "files": {}}')
+            with self.assertRaisesRegex(RuntimeError, "invalid manifest"):
+                install.uninstall(root)
+            self.assertTrue((root / "usr/local/sbin/usbgate").is_file())
+
+    def test_reinstall_refuses_occupied_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            install.install(root)
+            with self.assertRaisesRegex(RuntimeError, "manifest present"):
+                install.install(root)
+            self.assertTrue((root / "usr/local/sbin/usbgate").is_file())

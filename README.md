@@ -2,7 +2,7 @@
 
 A small, lightweight **USB presence observer** for headless Debian 13. This project explores physical-presence gating for selected noncritical services. **USB identifiers are clonable and do not authenticate a person.** The current base PR is **observation-only**: it never controls services, creates policy gates, changes SSH, or mounts USB media.
 
-**Validation:** unit-tested in a simulated offline environment; the new observer, udev event delivery, timer and live installation are **untested** on the target Debian notebook. [Previously verified notebook prerequisites](docs/hypotheses.md) include Python 3.13.5, tomllib and CLOCK_BOOTTIME.
+**Validation (2026-11-22):** 10 initial unit tests passed on the physical Debian 13 notebook. The maintainer also verified USB scanning, installation, timer activation, physical removal, 10-second absence grace, reconnect, journald events, disable and uninstall. The USB event path was verified end-to-end, but **udev-triggered versus timer-triggered reconciliation was not isolated**. See [hardware validation](docs/hardware-validation-2026-11-22.md) for precise evidence and remaining limitations. New regression tests added after that session require a fresh CI run.
 
 ## Safety before starting
 
@@ -12,7 +12,7 @@ Keep **two independent SSH sessions** connected and the local keyboard/display w
 
 ### Install
 
-**Status: implemented; temporary-root installation unit-tested; live host untested.** These commands must be run from the root of a checkout of the feature branch until this PR is merged.
+**Status: hardware-verified on 2026-11-22 (before the follow-up patch); re-test changed installer behavior before merge.** These commands must be run from the root of a checkout of the feature branch until this PR is merged.
 
 ```sh
 git clone https://github.com/kayo-willian/usb-presence-gate.git
@@ -27,7 +27,7 @@ Installation is inert: it copies files and writes a hash manifest, but does **no
 
 ### Setup
 
-**Status: implemented; hardware untested.** Observation alone may be enabled:
+**Status: hardware-verified on 2026-11-22 (before the follow-up patch).** Observation alone may be enabled:
 
 ```sh
 sudo /usr/local/sbin/usbgate doctor
@@ -48,7 +48,7 @@ sudo /usr/local/sbin/usbgate monitor enable
 
 ### Test
 
-**Status: simulated unit tests passed; target USB behavior untested.** With observation enabled, insert and remove a **disposable** USB stick. After removal, leave it unplugged for more than 10 seconds and inspect the state. Do not modify production services.
+**Status: hardware-verified for physical removal, 10-second absence grace and return on 2026-11-22.** With observation enabled, insert and remove a **disposable** USB stick. After removal, leave it unplugged for more than 10 seconds and inspect the state. Do not modify production services.
 
 ```sh
 /usr/local/sbin/usbgate scan
@@ -57,11 +57,11 @@ sudo journalctl -t usbgate -n 40 --no-pager
 sudo systemctl status usbgate-reconcile.timer --no-pager
 ```
 
-Expected behavior (not yet hardware-verified): a first removal records `device_absence_pending`, then `device_absent` after a 10-second grace even without another USB event. The first absence time survives restarts **within the same boot**.
+Verified behavior: a first removal records `device_absence_pending`, then `device_absent` after a 10-second grace even without another USB event. The first absence time survives restarts **within the same boot**.
 
 ### Status
 
-**Status: implemented; host behavior untested.**
+**Status: hardware-verified on 2026-11-22.**
 
 ```sh
 sudo /usr/local/sbin/usbgate status
@@ -71,7 +71,7 @@ sudo /usr/local/sbin/usbgate doctor
 
 ### Disable
 
-**Status: implemented; partial-failure cleanup unit-tested, host untested.** This turns off observation, not future policies.
+**Status: hardware-verified on 2026-11-22; simulated partial-failure cleanup unit-tested.** This turns off observation, not future policies.
 
 ```sh
 sudo /usr/local/sbin/usbgate monitor disable
@@ -92,7 +92,7 @@ This fallback applies only to the observation release. It is **not** a substitut
 
 ### Uninstall
 
-**Status: temporary-root unit-tested; live host untested.** Disable observation first, then from the same source checkout:
+**Status: hardware-verified on 2026-11-22 (before the follow-up patch); additional installer safety tests are pending fresh CI.** Disable observation first, then from the same source checkout:
 
 ```sh
 sudo make uninstall
@@ -103,7 +103,7 @@ The installer refuses overwrites of existing paths. The manifest limits removal 
 
 ## Technical notes
 
-The observer reads USB descriptors from sysfs and stores only short hashes, bus locations and interface classes. Hashes allow correlation but **are not device authentication** and may reveal a short identifier to someone who can guess it. Its volatile state is under `/run/usbgate/`; a short oneshot Python worker is triggered by fixed udev events and a periodic systemd timer. No daemon remains resident. **The safety timer must be active in any future enforcement mode**; it is optional only while observing.
+The observer reads USB descriptors from sysfs and stores only short hashes, bus locations and interface classes. When multiple devices report the same VID, PID and serial, the scan marks that fingerprint **ambiguous**, records its device count and bus locations, and cannot distinguish individual removals within that group. An ambiguous or serial-less identifier must never qualify for future enrollment. Fingerprints do not uniquely authenticate physical hardware. Hashes allow correlation but **are not device authentication** and may reveal a short identifier to someone who can guess it. Its volatile state is under `/run/usbgate/`; a short oneshot Python worker is triggered by fixed udev events and a periodic systemd timer. No daemon remains resident. **The safety timer must be active in any future enforcement mode**; it is optional only while observing.
 
 Review [lifecycle](docs/lifecycle.md), [threat model](docs/threat-model.md) and [prior art](docs/prior-art.md) before future enrollment or enforcement work.
 
