@@ -3,8 +3,12 @@
 This draft adds a deliberately restricted **demonstration**, not generic
 service/socket enforcement. The controlled unit is hardcoded to
 `presence-demo.service`, installed as a root-owned project file with
-`ConditionPathExists=/run/usbgate/demo-grant`. The process runs as
-`nobody` and does no networking or application work.
+`ConditionPathExists=/run/usbgate/demo-grant`. The process runs under a transient systemd-managed identity
+(`DynamicUser=yes`) and does no networking or application work.
+This replaced the original `User=nobody` configuration after the maintainer's
+Debian 13 `systemd-analyze verify` output warned that the shared nobody
+account is unsafe for this purpose. The replacement requires a fresh
+`systemd-analyze verify` check on the target notebook.
 
 The demo enrollment accepts only one currently connected USB storage device
 with a non-empty, unambiguous serial-based descriptor fingerprint. Descriptor

@@ -5,8 +5,8 @@ ConditionPathExists=/run/usbgate/demo-grant
 [Service]
 Type=simple
 ExecStart=/usr/bin/sleep infinity
-User=nobody
-Group=nogroup
+DynamicUser=yes
+UMask=0077
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict

@@ -230,3 +230,15 @@ class DemoStartFailureTests(unittest.TestCase):
                 demo.reconcile(state, observations)
                 self.assertFalse(grant.exists())
                 stopper.assert_called_once()
+
+
+class DemoSystemdUnitTests(unittest.TestCase):
+    def test_disposable_unit_uses_dynamic_identity(self):
+        unit = (Path(__file__).resolve().parents[1] / "packaging" / "systemd"
+                / "presence-demo.service").read_text(encoding="utf-8")
+        self.assertIn("DynamicUser=yes", unit)
+        self.assertIn("UMask=0077", unit)
+        self.assertNotIn("User=nobody", unit)
+        self.assertNotIn("Group=nogroup", unit)
+        self.assertIn("ConditionPathExists=/run/usbgate/demo-grant", unit)
+        self.assertIn("ExecStart=/usr/bin/sleep infinity", unit)

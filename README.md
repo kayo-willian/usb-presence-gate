@@ -118,7 +118,8 @@ and remaining safety checks are in [completion plan](docs/completion-plan.md).
 ## Disposable demonstration gate (new draft; untested on hardware)
 
 The new opt-in demo controls only `presence-demo.service`, a project-owned
-service that runs an idle `/usr/bin/sleep infinity` process as `nobody`.
+service that runs an idle `/usr/bin/sleep infinity` process under a
+systemd-managed dynamic user (`DynamicUser=yes`).
 It never controls SSH, the network, Docker or a user service. Device identifiers
 are easily imitated; this is a presence lab, **not authentication**.
 
