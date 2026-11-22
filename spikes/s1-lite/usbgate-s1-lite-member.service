@@ -1,0 +1,9 @@
+[Unit]
+Description=Disposable S1-lite socket-activated member
+BindsTo=usbgate-s1-lite-gate.service
+After=usbgate-s1-lite-gate.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/sleep infinity

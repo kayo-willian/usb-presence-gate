@@ -1,0 +1,1 @@
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ACTION=="add|remove", RUN+="/usr/bin/systemctl --no-block restart usbgate-s2-lite-observe.service"

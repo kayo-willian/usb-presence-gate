@@ -1,0 +1,13 @@
+[Unit]
+Description=Disposable S1-lite presence gate
+DefaultDependencies=no
+After=sysinit.target
+Before=shutdown.target
+Conflicts=shutdown.target
+ConditionPathExists=/run/usbgate-s1-lite/ok
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/true

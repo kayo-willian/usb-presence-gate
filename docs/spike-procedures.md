@@ -2,6 +2,8 @@
 
 These are review procedures for future human execution. The maintainer authorized only S1-lite (service and socket) and S2-lite (add, remove, boot with the stick, rapid reconnect, removal followed by silence). The full outlines below are deferred wherever they exceed those cases. G1 remains pending. Use disposable, explicitly named noncritical fixtures only. Record the initial systemd/udev state, two independent SSH sessions, working network and local console before each trial. Stop the trial if any unrelated unit changes or access deteriorates. Do not trigger synthetic system-wide uevents or change host authentication. Arrange boot observations in a separately authorized maintenance window.
 
+The approved target-host runbooks are [S1-lite — service and socket](../spikes/s1-lite/README.md) and [S2-lite — USB events and grace expiry](../spikes/s2-lite/README.md).
+
 For every case paste the date, exact command, redacted raw output, kernel, systemd/udev versions and a fictional device label describing the tested device. Include desired state, monotonic timestamps, manager jobs, exit status, actual final state, SSH/network checks and fixture cleanup. Preserve timing and unit relationships when redacting identifiers. An omitted case stays untested.
 
 ## S1 — Gate semantics

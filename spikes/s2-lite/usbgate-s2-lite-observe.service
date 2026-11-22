@@ -1,0 +1,16 @@
+[Unit]
+Description=Observe a single USB port for S2-lite
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+RuntimeDirectory=usbgate-s2-lite
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+EnvironmentFile=/etc/usbgate-s2-lite/port.conf
+ExecStart=/usr/bin/python3 -IB /etc/usbgate-s2-lite/observe.py
+TimeoutStartSec=30s
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes

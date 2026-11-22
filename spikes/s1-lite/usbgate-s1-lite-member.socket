@@ -1,0 +1,11 @@
+[Unit]
+Description=Disposable S1-lite local socket
+BindsTo=usbgate-s1-lite-gate.service
+After=usbgate-s1-lite-gate.service
+StartLimitIntervalSec=0
+
+[Socket]
+ListenStream=/run/usbgate-s1-lite/probe.sock
+SocketMode=0600
+RemoveOnStop=yes
+Accept=no
