@@ -101,6 +101,20 @@ sudo systemctl daemon-reload
 
 The installer refuses overwrites of existing paths. The manifest limits removal to files whose content is unchanged. Runtime observations and empty directories may remain. There is no automatic purge.
 
+### Read-only candidate unit inspection
+
+Before implementing service control, inspect a disposable, locally managed
+systemd unit. This is **not enrollment** and does not start or stop anything.
+Passing this conservative preflight does not guarantee a safe dependency graph.
+
+```sh
+PYTHONPATH=src python3 -m usbgate.cli inspect-unit demo-gate.service
+```
+
+The candidate unit must exist in `/etc/systemd/system`. Avoid SSH, network,
+firewall, Docker, authentication and other essential units. The gating roadmap
+and remaining safety checks are in [completion plan](docs/completion-plan.md).
+
 ## Technical notes
 
 The observer reads USB descriptors from sysfs and stores only short hashes, bus locations and interface classes. When multiple devices report the same VID, PID and serial, the scan marks that fingerprint **ambiguous**, records its device count and bus locations, and cannot distinguish individual removals within that group. An ambiguous or serial-less identifier must never qualify for future enrollment. Fingerprints do not uniquely authenticate physical hardware. Hashes allow correlation but **are not device authentication** and may reveal a short identifier to someone who can guess it. Its volatile state is under `/run/usbgate/`; a short oneshot Python worker is triggered by fixed udev events and a periodic systemd timer. No daemon remains resident. **The safety timer must be active in any future enforcement mode**; it is optional only while observing.
