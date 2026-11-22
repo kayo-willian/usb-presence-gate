@@ -2,7 +2,7 @@
 
 A small, lightweight USB presence observer and **opt-in disposable service gate** for headless Debian 13. This project explores physical-presence gating for selected noncritical services. **USB identifiers are clonable and do not authenticate a person.** The first release is observation-only; the next draft adds control of **one project-owned disposable service** only. It does not provide general service enrollment, change SSH or mount USB media.
 
-**Validation (2026-11-22):** 10 initial unit tests passed on the physical Debian 13 notebook. The maintainer also verified USB scanning, installation, timer activation, physical removal, 10-second absence grace, reconnect, journald events, disable and uninstall. The USB event path was verified end-to-end, but **udev-triggered versus timer-triggered reconciliation was not isolated**. See [hardware validation](docs/hardware-validation-2026-11-22.md) for precise evidence and remaining limitations. The expanded offline regression suite is verified by GitHub Actions on the feature branch; changed installation behavior still needs fresh hardware verification.
+**Validation (2026-11-22):** 41 automated tests passed on the physical Debian 13 notebook and in GitHub Actions. The maintainer verified inert installation, explicit enrollment and enablement, disposable service startup, physical USB removal and service stop, USB return and service restart, a refused manual start without a grant, boot recovery, Python-independent emergency recovery, and manifest-based uninstall. `systemd-analyze verify` completed without warnings. The exact stop latency and which worker trigger handled each event were not isolated. Read [demo evidence and limitations](docs/demo-safety.md) and [initial observation evidence](docs/hardware-validation-2026-11-22.md).
 
 ## Safety before starting
 
@@ -12,7 +12,7 @@ Keep **two independent SSH sessions** connected and the local keyboard/display w
 
 ### Install
 
-**Status: hardware-verified on 2026-11-22 (before the follow-up patch); re-test changed installer behavior before merge.** The following commands show the merged observation release. For the demo draft, check out `feature/demo-service-gate` instead and review its warnings before installation.
+**Status: physical notebook verified on 2026-11-22.** Use this branch until the demo PR is merged, then use `main`.
 
 ```sh
 git clone https://github.com/kayo-willian/usb-presence-gate.git
@@ -27,7 +27,7 @@ Installation is inert: it copies files and writes a hash manifest, but does **no
 
 ### Setup
 
-**Status: hardware-verified on 2026-11-22 (before the follow-up patch).** Observation alone may be enabled:
+**Status: physical notebook verified on 2026-11-22.** Observation alone may be enabled:
 
 ```sh
 sudo /usr/local/sbin/usbgate doctor
@@ -44,7 +44,7 @@ sudo /usr/local/sbin/usbgate monitor enable
 
 ### Enable
 
-**Merged release:** `monitor enable` starts observation only. The disposable demo control described below is **new, untested on hardware and opt-in**.
+**Behavior:** `monitor enable` starts observation only. The separately opted-in disposable demo control below has been tested on the physical notebook; it does not permit controlling arbitrary services.
 
 ### Test
 
@@ -79,7 +79,7 @@ sudo /usr/local/sbin/usbgate monitor disable
 
 ### Recover
 
-**Status: observation-only manual recovery; host untested.** If the CLI is unavailable, deactivate the observer using systemd and remove **only** the owned udev rule:
+**Status: the separate Python-independent demo recovery below was physically tested.** If the CLI is unavailable, deactivate the observer using systemd and remove **only** the owned udev rule:
 
 ```sh
 sudo systemctl disable --now usbgate-reconcile.timer
@@ -92,7 +92,7 @@ This fallback applies only to the observation release. It is **not** a substitut
 
 ### Uninstall
 
-**Status: hardware-verified on 2026-11-22 (before the follow-up patch); additional installer safety tests are CI-verified but not hardware-verified.** Disable observation first, then from the same source checkout:
+**Status: physically verified on 2026-11-22, including the updated demo installer.** Disable observation and any demo policy first, then from the same source checkout:
 
 ```sh
 sudo make uninstall
@@ -115,7 +115,7 @@ The candidate unit must exist in `/etc/systemd/system`. Avoid SSH, network,
 firewall, Docker, authentication and other essential units. The gating roadmap
 and remaining safety checks are in [completion plan](docs/completion-plan.md).
 
-## Disposable demonstration gate (new draft; untested on hardware)
+## Disposable demonstration gate (physical notebook verified)
 
 The new opt-in demo controls only `presence-demo.service`, a project-owned
 service that runs an idle `/usr/bin/sleep infinity` process under a
@@ -123,8 +123,9 @@ systemd-managed dynamic user (`DynamicUser=yes`).
 It never controls SSH, the network, Docker or a user service. Device identifiers
 are easily imitated; this is a presence lab, **not authentication**.
 
-This draft must first pass offline tests and inspection. **Do not enable it on
-the physical notebook until after review.** Once approved, the planned lab is:
+The feature passed 41 automated tests, systemd static verification and the
+physical notebook's basic lifecycle tests. Before repeating this lab, keep two
+SSH sessions and independent physical recovery access:
 
 ```sh
 # On the dedicated Debian notebook, from this feature branch:
@@ -139,9 +140,9 @@ sudo /usr/local/sbin/usbgate demo status
 sudo systemctl status presence-demo.service --no-pager
 ```
 
-Physically remove the USB stick, allow 10 seconds of grace, verify the demo
-service stops, then reconnect and verify it starts again. Check journald.
-Record exactly what happened; these results are **not yet hardware-verified**.
+Physical removal, service stop, reconnection and restart, boot recovery, and
+manual start refusal without a grant were verified on 2026-11-22. The 10-second
+grace is configured but exact stop latency was not independently measured.
 
 ```sh
 sudo /usr/local/sbin/usbgate demo disable
@@ -153,6 +154,9 @@ sudo systemctl daemon-reload
 
 `demo disable` stops only the disposable demo. `monitor disable` refuses to
 run while demo control is enabled. Uninstallation refuses remaining enrollment.
+During the hardware recovery test, the policy was moved to
+`/etc/usbgate/demo.json.disabled`; this backup is **not deleted by uninstall**.
+Inspect or remove it separately if no longer required.
 
 ### Manual demo recovery without Python or the USB stick
 

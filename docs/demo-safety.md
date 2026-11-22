@@ -67,11 +67,17 @@ on this draft branch:
   reported `state=unconfigured`, no grant, service inactive and
   timer inactive.
 
+- After manual recovery, the maintainer ran `sudo make uninstall` followed
+  by `systemctl daemon-reload`; manifest-owned files were removed and a
+  subsequent shell test confirmed `/usr/local/sbin/usbgate` absent. The
+  backup `/etc/usbgate/demo.json.disabled` was intentionally retained.
+
 This is **evidence of the basic happy path**, not proof of full security.
 No raw serial, actual fingerprint or hostname is published here. The
 exact stop latency, whether udev or the timer performed each transition,
 quick reconnect before grace expiry, timer loss, corrupt-policy recovery,
-complete source-based uninstall and post-uninstall cleanup remain unverified.
+removal of policy backup data and the distinction between udev/timer triggers
+remain unverified.
 
 ## Validation still needed on the real notebook
 
@@ -81,7 +87,8 @@ complete source-based uninstall and post-uninstall cleanup remain unverified.
 4. Verify physical unplug with grace, reconnection and repeated worker cycles.
 5. Confirm manual start while grant absent cannot run the demo.
 6. Verify fail-closed behavior on timer loss and invalid applied policy.
-7. Verify CLI reset and source-based uninstall, including leftover policy backups.
+7. CLI reset remains unit-tested but has not been demonstrated physically;
+   policy backup retention is intentional and documented.
 8. Measure systemd timer/udev path separately; update published evidence.
 
 These are tests to perform, **not claims of having performed them**.
