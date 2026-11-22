@@ -190,3 +190,43 @@ class DemoReconciliationTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 demo.enable()
             writer.assert_not_called()
+
+
+class DemoStartFailureTests(unittest.TestCase):
+    def test_failed_start_retries_closure(self):
+        import subprocess
+        policy = {"schema_version": 1, "fingerprint": "a" * 12, "enabled": True}
+        state = {"devices": {"a" * 12: {"state": "present"}}}
+        observations = {"a" * 12: {"assurance": "identifier-only", "classes": ["08"]}}
+        with tempfile.TemporaryDirectory() as directory:
+            rule = Path(directory) / "rule"
+            rule.write_text("dummy")
+            with patch.object(demo, "RULE", rule), \
+                 patch.object(demo, "read_policy", return_value=policy), \
+                 patch.object(demo, "verify_unit"), \
+                 patch.object(demo, "timer_active", return_value=True), \
+                 patch.object(demo, "open_grant", return_value=True), \
+                 patch.object(demo, "systemctl", side_effect=subprocess.CalledProcessError(1, "systemctl start")), \
+                 patch.object(demo, "close_demo") as closer:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    demo.reconcile(state, observations)
+                closer.assert_called_once()
+
+    def test_pending_clone_does_not_keep_existing_grant(self):
+        policy = {"schema_version": 1, "fingerprint": "a" * 12, "enabled": True}
+        state = {"devices": {"a" * 12: {"state": "pending"}}}
+        observations = {"a" * 12: {"assurance": "ambiguous", "classes": ["08"]}}
+        with tempfile.TemporaryDirectory() as directory:
+            grant = Path(directory) / "demo-grant"
+            rule = Path(directory) / "rule"
+            grant.write_text("")
+            rule.write_text("dummy")
+            with patch.object(demo, "GRANT", grant), \
+                 patch.object(demo, "RULE", rule), \
+                 patch.object(demo, "read_policy", return_value=policy), \
+                 patch.object(demo, "verify_unit"), \
+                 patch.object(demo, "timer_active", return_value=True), \
+                 patch.object(demo, "stop_demo") as stopper:
+                demo.reconcile(state, observations)
+                self.assertFalse(grant.exists())
+                stopper.assert_called_once()

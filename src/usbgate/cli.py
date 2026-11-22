@@ -287,7 +287,7 @@ def main(argv=None):
                 raise RuntimeError("reconcile requires root")
             observe_once()
         return 0
-    except (OSError, ValueError, RuntimeError) as exc:
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         print(f"usbgate: {exc}", file=sys.stderr)
         return 1
 

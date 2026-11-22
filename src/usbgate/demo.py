@@ -171,12 +171,12 @@ def reconcile(state, observations):
                 systemctl("start", SERVICE)
                 if not service_active():
                     raise RuntimeError("demo start not active")
-        elif transition == "pending" and GRANT.is_file():
+        elif transition == "pending" and not observed and GRANT.is_file():
             # Allow at most the persisted 10-second observation grace.
             return
         else:
             close_demo()
-    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired):
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
         close_demo()
         raise
 
