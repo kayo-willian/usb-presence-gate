@@ -108,7 +108,7 @@ systemd unit. This is **not enrollment** and does not start or stop anything.
 Passing this conservative preflight does not guarantee a safe dependency graph.
 
 ```sh
-PYTHONPATH=src python3 -m usbgate.cli inspect-unit usbgate-demo.service
+PYTHONPATH=src python3 -m usbgate.cli inspect-unit demo-gate.service
 ```
 
 The candidate unit must exist in `/etc/systemd/system`. Avoid SSH, network,
