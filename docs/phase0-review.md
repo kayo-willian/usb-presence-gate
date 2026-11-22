@@ -1,5 +1,7 @@
 # Phase 0 design review
 
+**Historical review.** The current MVP covers services and sockets. G1 and experiments S3/S4 are retired. The [maintainer instructions](../AGENTS.md) define the current scope, and the [lifecycle](lifecycle.md) records the selected gate and trigger.
+
 **Approved scope (2026-11-22).** The maintainer authorized observation and preparation of S1-lite (service and socket) and S2-lite (add, remove, boot with the stick, rapid reconnect, removal followed by silence). The remaining experiments require separate approval. The USB gate, trigger, enforcement and recovery semantics still require evidence. All proposed runtime behavior is `untested`.
 
 ## Repository and name check
