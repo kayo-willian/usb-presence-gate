@@ -1,10 +1,20 @@
 # Lifecycle outline
 
+## MVP design choices
+
+- Use `BindsTo=` and `After=` for each enrolled service or socket. Omit `Requisite=` to keep a single dependency responsible for pulling in the gate. Delete the owned grant flags before submitting emergency gate stops. After a close, verify the gate, members and pending jobs. Explicitly stop any still-active enrolled members, then verify again and report incomplete closure.
+- A fixed udev `RUN+=` action queues a nonblocking restart of the worker on USB add/remove. Use `StartLimitIntervalSec=0` so start limiting does not suppress a later scan. Persist first absence, wait the remaining grace, then rescan. If the trigger fails on the notebook, the fallback is a short internal timer with its interval chosen on the notebook.
+- One policy owns each unit. Reject missing or ambiguous serials at enrollment. Revocation removes eligibility without grace. Another valid device in the same policy can sustain an existing grant. `on_present=start` acts only on a transition to granted.
+
+These choices are planned and `untested` on the notebook.
+
+## States
+
 | State | Evidence the operator should see | Permitted behavior |
 | --- | --- | --- |
 | S0 installed | Installed files, no enabled monitor, owned drop-ins or live grants. Preserved configuration and snapshots may exist. | Inert. Installation performs no enable or start. |
-| S1 observing | Monitor enabled, explicitly configured timer state, zero enrolled units and zero live grants. | Audit changes. A prepared snapshot is inert. |
-| S2 enforcing | Safety timer active. Marked drop-ins inventory the enrolled units and agree with the applied generation and effective manager relationships. | Reconcile only enabled policies and verify outcomes. |
+| S1 observing | Observer enabled, zero enrolled units and zero live grants. | Audit changes. A prepared snapshot is inert. |
+| S2 enforcing | Marked drop-ins inventory the enrolled units and agree with the applied generation and effective manager relationships. | Reconcile only enabled policies and verify outcomes. |
 | DEGRADED | Expected artifacts missing, inconsistent manager state or failed integrity check. Can overlay S2 or a partial transition. | Quiesce opens, delete owned grant flags, then stop the gates and verify closure. Report unverified exposure. A missing snapshot cannot establish S0. |
 
 **Enable.** Establish S1 first. Validate, stage a durable applied generation and keep its predecessor for operator inspection. Refuse orphaned enrollments or overlapping ownership. Under the shared transition lock, inspect present devices, active members and pending jobs before enabling. Require explicit --allow-stop when enabling would stop an active absent-device member. Record enough intent to resume interrupted changes. Confirm loaded effective dependencies before reporting S2.
