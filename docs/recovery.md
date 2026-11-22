@@ -1,0 +1,145 @@
+# Recovery, diagnostics and removal
+
+This page documents the **project-owned disposable demo**, not system recovery
+for arbitrary Linux services. The procedure was manually tested on the
+physical Debian 13 notebook on 2026-11-22.
+
+The demo is not a cryptographic authentication mechanism. Recovery must never
+require the USB drive or a working Python interpreter. Keep at least one
+independent console access path before using it on a remote headless host.
+
+## A. Check the state without changing it
+
+If the installed launcher works:
+
+```sh
+sudo /usr/local/sbin/usbgate doctor
+sudo /usr/local/sbin/usbgate status --json
+sudo /usr/local/sbin/usbgate demo status
+```
+
+Regardless of the CLI:
+
+```sh
+sudo systemctl is-active usbgate-reconcile.timer
+sudo systemctl is-active usbgate-reconcile.service
+sudo systemctl is-active presence-demo.service
+sudo journalctl -u usbgate-reconcile.service -n 60 --no-pager
+sudo journalctl -t usbgate -n 60 --no-pager
+```
+
+`is-active` normally returns a nonzero exit code when a unit is inactive.
+The project normally touches no other system services.
+
+## B. Normal shutdown (Python and CLI are available)
+
+Only if the demo is enrolled and armed:
+
+```sh
+sudo /usr/local/sbin/usbgate demo disable
+sudo /usr/local/sbin/usbgate demo reset
+sudo /usr/local/sbin/usbgate monitor disable
+```
+
+If the demo was never enrolled, skip `demo disable` and `demo reset`.
+If monitoring was never enabled, `monitor disable` is optional.
+
+From the same project source checkout used to install:
+
+```sh
+sudo make uninstall
+sudo systemctl daemon-reload
+```
+
+Do not bypass an uninstall refusal by forcibly removing arbitrary files.
+The installer checks its file manifest and insists that the demo is not
+enrolled or running and the project rule is inactive.
+
+## C. Manual recovery without Python (tested)
+
+The following procedure stops **only project units**, removes the
+**project-owned** USB observation rule and revokes the project grant.
+It never stops SSH, network, firewall, authentication or Docker.
+
+```sh
+sudo systemctl disable --now usbgate-reconcile.timer
+sudo systemctl stop usbgate-reconcile.service
+sudo rm -f /etc/udev/rules.d/70-usbgate.rules
+sudo udevadm control --reload
+sudo rm -f /run/usbgate/demo-grant
+sudo systemctl stop presence-demo.service
+sudo mv /etc/usbgate/demo.json /etc/usbgate/demo.json.disabled
+sudo systemctl daemon-reload
+```
+
+The `mv` line assumes a live `demo.json` exists and the destination
+`demo.json.disabled` does **not** already exist. If the policy is missing
+or an existing backup is present, **inspect it first and choose a unique
+backup name**; do not overwrite existing operator data. Keep the saved
+policy for investigation.
+
+If a systemctl command fails, do not assume closure is complete. Inspect
+`systemctl status` and `journalctl`, retain the evidence, and use local
+console recovery if necessary. The system cannot guarantee closure when
+the underlying system manager or kernel is unavailable.
+
+Verify without relying on Python:
+
+```sh
+sudo systemctl is-active presence-demo.service
+sudo systemctl is-active usbgate-reconcile.timer
+sudo test ! -e /run/usbgate/demo-grant && echo "Demo grant absent"
+sudo test ! -e /etc/usbgate/demo.json && echo "Active demo policy absent"
+```
+
+The two systemd commands should report `inactive`; the other two
+checks should report the absence of a grant and live policy.
+
+After checking, it is possible to run `sudo make uninstall` from the
+same source checkout. The **backup policy is intentionally preserved**
+and is not in the manifest.
+
+## D. Inert install / update and file-integrity failures
+
+- `make install` refuses occupied targets, symlink parents and an existing
+  install manifest. Inspect file ownership first; **do not overwrite**.
+- `make uninstall` compares hashes of managed installed files against
+  `/var/lib/usbgate/install-manifest.json`. If an installed file changed,
+  it refuses removal. Keep evidence before repairing; do not casually
+  delete the manifest.
+- The checkout's source code must correspond to the installed version
+  when using `sudo make uninstall`. Reinstall is not an in-place upgrade:
+  normal disable/reset/uninstall must come first.
+- `systemctl daemon-reload` is required after installing or removing unit
+  files. Unit files installed from source are inert until explicit activation.
+- No forced cleanup script is provided because deleting arbitrary files from
+  `/etc/systemd/system` or `/etc/udev/rules.d` is dangerous.
+
+## E. Residual data and optional repository removal
+
+The source checkout is different from the installed application. The
+manifest deliberately does **not** include operator policy backups,
+volatile observation state, logs, or unrelated data.
+
+After fully uninstalling and verifying the project services are inactive,
+you may inspect the known leftovers:
+
+```sh
+sudo ls -la /etc/usbgate /var/lib/usbgate /run/usbgate
+```
+
+Missing directories will produce a harmless error. Review each item
+before removal; the manual recovery backup is typically
+`/etc/usbgate/demo.json.disabled`. Never delete a directory just because
+it looks similar to a project path.
+
+Only after confirming the project is backed up on GitHub and your local
+working tree has no unsaved work, optionally remove the local clone:
+
+```sh
+cd ~
+rm -rf -- "$HOME/usb-presence-gate"
+```
+
+This permanently deletes the **local working copy**, not the remote
+GitHub repository.
