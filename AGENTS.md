@@ -4,6 +4,7 @@ This project is a physical presence interlock for explicitly enrolled, noncritic
 
 ## Evidence and publication
 
+- Reply to the maintainer in Brazilian Portuguese. The English README must disclose the use of AI in the project.
 - Use English for repository text, CLI help, code, comments, commit messages and PRs. Mark behavior untested by default. Use unit-tested for executed unit tests, ci-verified for an observed CI run and hardware-verified only for human-pasted date, command, output, kernel and device evidence. Redact identifiers before publication.
 - Keep the hypothesis ledger current. Use fictional, labeled fixtures. Exclude real serials, UUIDs and device names. Attribute prior art and verify its licensing before considering reuse.
 - Use a topic branch and an English PR describing changes, rationale, risks, checks and untested hardware behavior. Do not commit to main, merge or rewrite published history. G1 requires S1–S4 evidence and the human's gate and trigger decision.

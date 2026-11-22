@@ -1,6 +1,6 @@
 # Phase 1 spike outlines
 
-These are review procedures for future human execution. Phase 1 approval precedes fixture preparation. Use disposable, explicitly named noncritical fixtures only. Record the initial systemd/udev state, two independent SSH sessions, working network and local console before each trial. Stop the trial if any unrelated unit changes or access deteriorates. Do not trigger synthetic system-wide uevents or change host authentication. Arrange boot observations in a separately authorized maintenance window.
+These are review procedures for future human execution. The maintainer authorized only S1-lite (service and socket) and S2-lite (add, remove, boot with the stick, rapid reconnect, removal followed by silence). The full outlines below are deferred wherever they exceed those cases. G1 remains pending. Use disposable, explicitly named noncritical fixtures only. Record the initial systemd/udev state, two independent SSH sessions, working network and local console before each trial. Stop the trial if any unrelated unit changes or access deteriorates. Do not trigger synthetic system-wide uevents or change host authentication. Arrange boot observations in a separately authorized maintenance window.
 
 For every case paste the date, exact command, redacted raw output, kernel, systemd/udev versions and a fictional device label describing the tested device. Include desired state, monotonic timestamps, manager jobs, exit status, actual final state, SSH/network checks and fixture cleanup. Preserve timing and unit relationships when redacting identifiers. An omitted case stays untested.
 
@@ -14,7 +14,7 @@ For every case paste the date, exact command, redacted raw output, kernel, syste
 ## S2 — Delivery, restarts and progress
 
 1. In observe mode correlate physical add/remove, boot with the stick present, rapid reconnect, a single removal followed by silence, and a bounded burst with udev delivery, manager submissions and completed scans. Capture final physical state independently.
-2. Arrange a second event during settle, during grace and during verification on disposable fixtures. Check whether first absence survives interruption and whether an expiry check actually runs. Compare timer enabled and disabled. Reconnect before expiry and check that stale absence cannot stop a valid policy.
+2. Arrange a second event during settle, during grace and during verification on disposable fixtures. Check whether first absence survives interruption and whether an expiry check actually runs. The lite observer must demonstrate grace expiry in silence. The future enforcing S2 lifecycle requires the safety timer. Reconnect before expiry and check that stale absence cannot stop a valid policy.
 3. Measure CPU, peak RSS, journal growth, event/worker/completion counts, lock wait and SSH responsiveness with StartLimitIntervalSec=0. Record when the final event produces a completed scan. Stop increasing the burst if host responsiveness deteriorates. Zero rate limiting earns no presumption of progress.
 4. If the primary path fails, compare the tagged device-unit fallback under the same cases, verifying the mapping and removal callback. If considering timer-only operation, measure its detection delay and cost. The human selects the trigger after the observations.
 
@@ -27,7 +27,7 @@ For every case paste the date, exact command, redacted raw output, kernel, syste
 ## S4 — Emergency closure and recovery
 
 1. Record the inventory of deliberately created gate instances, flags, loaded state and pending jobs. Compare no matches, multiple active matches, inactive/unloaded instances and an instance with a queued start. Capture exact glob arguments, selected units and subsequent states.
-2. Compare an explicit critical worker exit, a timeout, an interrupted restart and exit 3. Observe whether OnFailure runs in each case and whether any gate can reactivate from a surviving flag. Include an active protected member whose disposable drop-in is absent. Success of job submission alone leaves the case open.
+2. Compare an explicit critical worker exit, a timeout, an interrupted restart and exit 3. Observe whether OnFailure runs in each case, deletes owned flags before submitting stops, and prevents reactivation. Include an active protected member whose disposable drop-in is absent. Success of job submission alone leaves the case open.
 3. Introduce a missing/corrupt snapshot in the disposable enrollment and retain independent ownership evidence. Check that DEGRADED is visible, fresh grants are inhibited and only enrolled noncritical targets can be affected. Record any manager-unavailable case as unverified until scope-safe evidence is available.
 4. Rehearse manual recovery without the CLI or USB device. Verify effective detachment before stopping gates, confirm the original member state, remove only fixture-owned artifacts and repeat recovery. Compare the baseline and verify both SSH sessions, network and local console.
 
