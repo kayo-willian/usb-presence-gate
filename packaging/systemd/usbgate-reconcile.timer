@@ -1,0 +1,11 @@
+[Unit]
+Description=USB Presence Gate periodic observation
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=60s
+AccuracySec=5s
+Unit=usbgate-reconcile.service
+
+[Install]
+WantedBy=timers.target

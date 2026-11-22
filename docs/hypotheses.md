@@ -6,7 +6,8 @@ On 2026-11-22 the maintainer reported Debian GNU/Linux 13.8 (trixie), Python 3.1
 | --- | --- | --- |
 | H1 — python3 is installed and reports version 3.13.5 | hardware-verified | Maintainer's notebook report above. |
 | H1 — `tomllib` import and `CLOCK_BOOTTIME` read | hardware-verified | See the notebook transcript below. |
-| USB event delivery and grace | untested | Observe add, remove, boot with the stick, rapid reconnect and removal followed by silence. |
+| USB observation, removal and grace | hardware-verified | Maintainer observed the device as present, absence pending, absent after 10 seconds, and returned; journald confirmed the transitions. Trigger isolation not yet measured. |
+| Cold boot with USB and rapid reconnection | untested | Run separately with terminal evidence; do not infer these from the measured removal and return. |
 | Service and socket closure | untested | Verify both states after removal, including explicit stop if propagation leaves a member active. |
 
 ## H1 notebook evidence

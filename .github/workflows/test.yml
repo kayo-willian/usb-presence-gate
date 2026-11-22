@@ -1,0 +1,11 @@
+name: Python standard library tests
+on: [push, pull_request]
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run offline tests
+        run: make test
+      - name: Compile sources
+        run: python3 -m compileall -q src bin
