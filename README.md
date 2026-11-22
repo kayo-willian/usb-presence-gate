@@ -60,6 +60,6 @@ The maintainer has already reported Python 3.13.5 on the notebook. [Hardware evi
 
 ## Credits
 
-Henrique (rique-decoder) inspired this project with linux-usb-security-token. USBGuard is a related approach to device authorization. [Prior art](docs/prior-art.md)
+Henrique (rique-decoder) https://github.com/rique-decoder inspired this project with linux-usb-security-token. USBGuard is a related approach to device authorization. [Prior art](docs/prior-art.md)
 
 AI assisted with documentation and spike preparation. The maintainer reviews changes and supplies target-notebook results.
