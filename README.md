@@ -50,7 +50,7 @@ Remove manifest-owned files and list retained data. **Status:** not implemented 
 
 ## Read-only notebook check
 
-**Command status: untested on the notebook.** Run as an ordinary user and paste the output. A successful run confirms that this interpreter can load the TOML parser and read the boot clock.
+**Command status: hardware-verified.** On 2026-11-22 the maintainer confirmed that Python 3.13.5 on the test notebook imported `tomllib` and read `CLOCK_BOOTTIME`.
 
 ```sh
 python3 -c 'import time, tomllib; print("tomllib OK"); print("CLOCK_BOOTTIME", time.clock_gettime(time.CLOCK_BOOTTIME))'
