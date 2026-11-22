@@ -146,7 +146,7 @@ class DemoReconciliationTests(unittest.TestCase):
                  patch.object(demo, "verify_unit"), \
                  patch.object(demo, "timer_active", return_value=False), \
                  patch.object(demo, "stop_demo") as stopper:
-                with self.assertRaisesRegex(RuntimeError, "timer"):
+                with self.assertRaisesRegex(RuntimeError, "safety monitor unavailable"):
                     demo.reconcile(self.state("present"), self.observations())
                 self.assertFalse(grant.exists())
                 stopper.assert_called_once()
@@ -159,16 +159,18 @@ class DemoReconciliationTests(unittest.TestCase):
             close.assert_called_once()
 
     def test_ambiguous_identity_closes_even_if_observation_present(self):
-        with patch.object(demo, "read_policy", return_value=self.policy()), \
-             patch.object(demo, "verify_unit"), \
-             patch.object(demo, "RULE", Path("/temporary/fictional/missing/rule")), \
-             patch.object(demo, "timer_active", return_value=True), \
-             patch.object(demo, "close_demo") as close:
-            # If the rule is missing, the same fail-closed property must hold.
-            with self.assertRaises(RuntimeError):
+        with tempfile.TemporaryDirectory() as directory:
+            rule = Path(directory) / "rule"
+            rule.write_text("rule")
+            with patch.object(demo, "RULE", rule), \
+                 patch.object(demo, "read_policy", return_value=self.policy()), \
+                 patch.object(demo, "verify_unit"), \
+                 patch.object(demo, "timer_active", return_value=True), \
+                 patch.object(demo, "close_demo") as closer:
                 demo.reconcile(self.state("present"), {
                     "a" * 12: {"assurance": "ambiguous", "classes": ["08"]}})
-            close.assert_called_once()
+                closer.assert_called_once()
+
 
     def test_disable_stops_before_disarming(self):
         policy = self.policy()

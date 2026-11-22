@@ -6,18 +6,18 @@ A small, lightweight USB presence observer and **opt-in disposable service gate*
 
 ## Safety before starting
 
-Keep **two independent SSH sessions** connected and the local keyboard/display within reach before enabling observation. No Docker, VM or graphical environment is required. No service or socket should be enrolled in this phase.
+Keep **two independent SSH sessions** connected and the local keyboard/display within reach before enabling observation. No Docker, VM or graphical environment is required. Do not enable the disposable demo gate before its branch has passed CI, review and notebook safety checks.
 
 ## Operations
 
 ### Install
 
-**Status: hardware-verified on 2026-11-22 (before the follow-up patch); re-test changed installer behavior before merge.** These commands must be run from the root of a checkout of the feature branch until this PR is merged.
+**Status: hardware-verified on 2026-11-22 (before the follow-up patch); re-test changed installer behavior before merge.** The following commands show the merged observation release. For the demo draft, check out `feature/demo-service-gate` instead and review its warnings before installation.
 
 ```sh
 git clone https://github.com/kayo-willian/usb-presence-gate.git
 cd usb-presence-gate
-git switch feature/observe-base
+git switch main
 make test
 sudo make install
 /usr/local/sbin/usbgate --help
@@ -34,9 +34,9 @@ sudo /usr/local/sbin/usbgate doctor
 sudo /usr/local/sbin/usbgate monitor enable
 ```
 
-### Enroll
+### Scan
 
-**Status: not implemented.** The following command only lists USB descriptors and redacted fingerprints; it does not register a device:
+**Status: hardware-verified in observation-only mode.** This command lists USB descriptors and redacted fingerprints; it does not register a device:
 
 ```sh
 /usr/local/sbin/usbgate scan
@@ -44,7 +44,7 @@ sudo /usr/local/sbin/usbgate monitor enable
 
 ### Enable
 
-**Status: enforcement not implemented.** `monitor enable` starts observation only. No service availability policy is installed.
+**Merged release:** `monitor enable` starts observation only. The disposable demo control described below is **new, untested on hardware and opt-in**.
 
 ### Test
 
@@ -99,7 +99,7 @@ sudo make uninstall
 sudo systemctl daemon-reload
 ```
 
-The installer refuses overwrites of existing paths. The manifest limits removal to files whose content is unchanged. Runtime observations and empty directories may remain. There is no automatic purge.
+The installer refuses overwrites of existing paths. The manifest limits removal to files whose content is unchanged. In the demo draft, disable and reset demo enrollment before uninstall. Runtime observations and empty directories may remain. There is no automatic purge.
 
 ### Read-only candidate unit inspection
 
