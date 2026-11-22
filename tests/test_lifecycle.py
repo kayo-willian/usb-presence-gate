@@ -160,3 +160,16 @@ class AdditionalLifecycleTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "manifest present"):
                 install.install(root)
             self.assertTrue((root / "usr/local/sbin/usbgate").is_file())
+
+    def test_interrupted_copy_leaves_no_installed_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def interrupted_copy(source, destination):
+                destination.write(b"partial")
+                raise OSError("simulated I/O failure")
+            with patch.object(install.shutil, "copyfileobj",
+                              side_effect=interrupted_copy):
+                with self.assertRaisesRegex(OSError, "simulated I/O failure"):
+                    install.install(root)
+            self.assertFalse((root / "usr/local/sbin/usbgate").exists())
+            self.assertFalse((root / "var/lib/usbgate/install-manifest.json").exists())

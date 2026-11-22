@@ -2,7 +2,7 @@
 
 A small, lightweight **USB presence observer** for headless Debian 13. This project explores physical-presence gating for selected noncritical services. **USB identifiers are clonable and do not authenticate a person.** The current base PR is **observation-only**: it never controls services, creates policy gates, changes SSH, or mounts USB media.
 
-**Validation (2026-11-22):** 10 initial unit tests passed on the physical Debian 13 notebook. The maintainer also verified USB scanning, installation, timer activation, physical removal, 10-second absence grace, reconnect, journald events, disable and uninstall. The USB event path was verified end-to-end, but **udev-triggered versus timer-triggered reconciliation was not isolated**. See [hardware validation](docs/hardware-validation-2026-11-22.md) for precise evidence and remaining limitations. New regression tests added after that session require a fresh CI run.
+**Validation (2026-11-22):** 10 initial unit tests passed on the physical Debian 13 notebook. The maintainer also verified USB scanning, installation, timer activation, physical removal, 10-second absence grace, reconnect, journald events, disable and uninstall. The USB event path was verified end-to-end, but **udev-triggered versus timer-triggered reconciliation was not isolated**. See [hardware validation](docs/hardware-validation-2026-11-22.md) for precise evidence and remaining limitations. The expanded offline regression suite is verified by GitHub Actions on the feature branch; changed installation behavior still needs fresh hardware verification.
 
 ## Safety before starting
 
@@ -92,7 +92,7 @@ This fallback applies only to the observation release. It is **not** a substitut
 
 ### Uninstall
 
-**Status: hardware-verified on 2026-11-22 (before the follow-up patch); additional installer safety tests are pending fresh CI.** Disable observation first, then from the same source checkout:
+**Status: hardware-verified on 2026-11-22 (before the follow-up patch); additional installer safety tests are CI-verified but not hardware-verified.** Disable observation first, then from the same source checkout:
 
 ```sh
 sudo make uninstall

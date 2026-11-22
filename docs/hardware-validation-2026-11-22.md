@@ -31,6 +31,6 @@ This is a concise evidence record of commands executed by the maintainer on the 
 - The test did **not separately prove which wakeup mechanism** (udev or the periodic timer) initiated each reconcile.
 - Boot with the stick inserted, rapid replug within grace, a second device exposing identical descriptors, repeated simulated failures, and power interruptions remain separate tests.
 - No service or socket gating exists in this PR. SSH, networking, PAM and firewall were out of scope.
-- The post-test hardening patch requires new unit/CI verification and, before any security-sensitive behavior is introduced, fresh hardware checks.
+- The follow-up hardening patch has separately passed GitHub Actions unit tests and source compilation. Its changed installation behavior has not yet been retested on physical hardware.
 
 This document records a single completed session, not a blanket certification for future revisions.
