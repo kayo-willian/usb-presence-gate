@@ -1,65 +1,114 @@
 # usb-presence-gate
 
-A small lab tool for headless Debian 13. The planned physical-presence interlock allows an enrolled, noncritical systemd service or socket to run while a registered USB device is present. USB descriptors provide identifier-only assurance and can be cloned. Each unit belongs to one policy. Enrollment rejects devices with missing or ambiguous serials.
+A small, lightweight **USB presence observer** for headless Debian 13. This project explores physical-presence gating for selected noncritical services. **USB identifiers are clonable and do not authenticate a person.** The current base PR is **observation-only**: it never controls services, creates policy gates, changes SSH, or mounts USB media.
 
-## Before the first test
+**Validation:** unit-tested in a simulated offline environment; the new observer, udev event delivery, timer and live installation are **untested** on the target Debian notebook. [Previously verified notebook prerequisites](docs/hypotheses.md) include Python 3.13.5, tomllib and CLOCK_BOOTTIME.
 
-- [ ] Open two independent SSH sessions to the notebook and confirm both respond.
-- [ ] Keep the local keyboard and display within reach and confirm you can use the console.
-- [ ] For a future gate test, choose a disposable service and socket that have no critical dependencies.
+## Safety before starting
+
+Keep **two independent SSH sessions** connected and the local keyboard/display within reach before enabling observation. No Docker, VM or graphical environment is required. No service or socket should be enrolled in this phase.
 
 ## Operations
 
-This documentation step provides a read-only notebook check. The CLI, installer and recovery procedure are planned. Exact commands will accompany each implemented operation.
-
 ### Install
 
-Copy the tool and record the installed files. **Status:** not implemented yet.
+**Status: implemented; temporary-root installation unit-tested; live host untested.** These commands must be run from the root of a checkout of the feature branch until this PR is merged.
+
+```sh
+git clone https://github.com/kayo-willian/usb-presence-gate.git
+cd usb-presence-gate
+git switch feature/observe-base
+make test
+sudo make install
+/usr/local/sbin/usbgate --help
+```
+
+Installation is inert: it copies files and writes a hash manifest, but does **not** enable any udev rule, timer or service.
 
 ### Setup
 
-Check the host and turn on observation. **Status:** not implemented yet.
+**Status: implemented; hardware untested.** Observation alone may be enabled:
+
+```sh
+sudo /usr/local/sbin/usbgate doctor
+sudo /usr/local/sbin/usbgate monitor enable
+```
 
 ### Enroll
 
-Register a USB device with an unambiguous identifier. **Status:** not implemented yet.
+**Status: not implemented.** The following command only lists USB descriptors and redacted fingerprints; it does not register a device:
+
+```sh
+/usr/local/sbin/usbgate scan
+```
 
 ### Enable
 
-Apply a policy to a noncritical service or socket. **Status:** not implemented yet.
+**Status: enforcement not implemented.** `monitor enable` starts observation only. No service availability policy is installed.
 
 ### Test
 
-Exercise insertion and removal with a disposable unit. **Status:** not implemented yet.
+**Status: simulated unit tests passed; target USB behavior untested.** With observation enabled, insert and remove a **disposable** USB stick. After removal, leave it unplugged for more than 10 seconds and inspect the state. Do not modify production services.
+
+```sh
+/usr/local/sbin/usbgate scan
+sudo /usr/local/sbin/usbgate status --json
+sudo journalctl -t usbgate -n 40 --no-pager
+sudo systemctl status usbgate-reconcile.timer --no-pager
+```
+
+Expected behavior (not yet hardware-verified): a first removal records `device_absence_pending`, then `device_absent` after a 10-second grace even without another USB event. The first absence time survives restarts **within the same boot**.
 
 ### Status
 
-Read the monitor and gate state. **Status:** not implemented yet.
+**Status: implemented; host behavior untested.**
+
+```sh
+sudo /usr/local/sbin/usbgate status
+sudo /usr/local/sbin/usbgate status --json
+sudo /usr/local/sbin/usbgate doctor
+```
 
 ### Disable
 
-Detach the policy and return the unit to operator control. **Status:** not implemented yet.
+**Status: implemented; partial-failure cleanup unit-tested, host untested.** This turns off observation, not future policies.
+
+```sh
+sudo /usr/local/sbin/usbgate monitor disable
+```
 
 ### Recover
 
-Restore an inert installation without the CLI or USB device. **Status:** not implemented yet.
+**Status: observation-only manual recovery; host untested.** If the CLI is unavailable, deactivate the observer using systemd and remove **only** the owned udev rule:
+
+```sh
+sudo systemctl disable --now usbgate-reconcile.timer
+sudo systemctl stop usbgate-reconcile.service
+sudo rm -f /etc/udev/rules.d/70-usbgate.rules
+sudo udevadm control --reload
+```
+
+This fallback applies only to the observation release. It is **not** a substitute for recovery procedures once actual service enforcement exists.
 
 ### Uninstall
 
-Remove manifest-owned files and list retained data. **Status:** not implemented yet.
-
-## Read-only notebook check
-
-**Command status: hardware-verified.** On 2026-11-22 the maintainer confirmed that Python 3.13.5 on the test notebook imported `tomllib` and read `CLOCK_BOOTTIME`.
+**Status: temporary-root unit-tested; live host untested.** Disable observation first, then from the same source checkout:
 
 ```sh
-python3 -c 'import time, tomllib; print("tomllib OK"); print("CLOCK_BOOTTIME", time.clock_gettime(time.CLOCK_BOOTTIME))'
+sudo make uninstall
+sudo systemctl daemon-reload
 ```
 
-The maintainer has already reported Python 3.13.5 on the notebook. [Hardware evidence](docs/hypotheses.md)
+The installer refuses overwrites of existing paths. The manifest limits removal to files whose content is unchanged. Runtime observations and empty directories may remain. There is no automatic purge.
 
-## Credits
+## Technical notes
 
-Henrique (rique-decoder) https://github.com/rique-decoder inspired this project with linux-usb-security-token. USBGuard is a related approach to device authorization. [Prior art](docs/prior-art.md)
+The observer reads USB descriptors from sysfs and stores only short hashes, bus locations and interface classes. Hashes allow correlation but **are not device authentication** and may reveal a short identifier to someone who can guess it. Its volatile state is under `/run/usbgate/`; a short oneshot Python worker is triggered by fixed udev events and a periodic systemd timer. No daemon remains resident. **The safety timer must be active in any future enforcement mode**; it is optional only while observing.
 
-AI assisted with documentation and spike preparation. The maintainer reviews changes and supplies target-notebook results.
+Review [lifecycle](docs/lifecycle.md), [threat model](docs/threat-model.md) and [prior art](docs/prior-art.md) before future enrollment or enforcement work.
+
+## Credits and development
+
+Inspired by **Henrique ([@rique-decoder](https://github.com/rique-decoder))**, whose open-source [Linux USB Security Token](https://github.com/rique-decoder/linux-usb-security-token) explores USB-based login on Linux desktops. The headless observation architecture here is independent; no upstream code was copied. [USBGuard](https://github.com/USBGuard/usbguard) is a separate tool for USB device authorization.
+
+AI tools assisted with architecture review, code and documentation. The maintainer sets requirements, reviews changes and supplies real notebook test evidence.

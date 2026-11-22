@@ -1,0 +1,2 @@
+# Observe add/remove only; never pass USB attributes to a command.
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ACTION=="add|remove", RUN+="/usr/bin/systemctl --no-block restart usbgate-reconcile.service"

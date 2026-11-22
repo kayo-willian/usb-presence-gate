@@ -1,0 +1,108 @@
+"""Inert manifest-owned installation; no activation or enforcement."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+PROJECT = Path(__file__).resolve().parents[2]
+MANIFEST = "/var/lib/usbgate/install-manifest.json"
+FILES = {
+    "bin/usbgate": "/usr/local/sbin/usbgate",
+    "src/usbgate/__init__.py": "/usr/local/lib/usbgate/usbgate/__init__.py",
+    "src/usbgate/cli.py": "/usr/local/lib/usbgate/usbgate/cli.py",
+    "src/usbgate/observe.py": "/usr/local/lib/usbgate/usbgate/observe.py",
+    "packaging/systemd/usbgate-reconcile.service": "/etc/systemd/system/usbgate-reconcile.service",
+    "packaging/systemd/usbgate-reconcile.timer": "/etc/systemd/system/usbgate-reconcile.timer",
+    "packaging/udev/70-usbgate.rules": "/usr/local/lib/usbgate/packaging/udev/70-usbgate.rules",
+}
+
+
+def destination(root, absolute):
+    return root / absolute.lstrip("/")
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def install(root):
+    manifest = destination(root, MANIFEST)
+    if manifest.exists() or manifest.is_symlink():
+        raise RuntimeError("installation already exists (manifest present)")
+    for relative, path in FILES.items():
+        source, target = PROJECT / relative, destination(root, path)
+        if not source.is_file() or target.exists() or target.is_symlink():
+            raise RuntimeError(f"missing source or occupied installation path: {path}")
+    created = []
+    try:
+        entries = {}
+        for relative, path in FILES.items():
+            target = destination(root, path)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if target.parent.is_symlink():
+                raise RuntimeError(f"symlink parent: {path}")
+            with (PROJECT / relative).open("rb") as input_stream:
+                mode = 0o755 if relative == "bin/usbgate" else 0o644
+                fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode)
+                with os.fdopen(fd, "wb") as output_stream:
+                    shutil.copyfileobj(input_stream, output_stream)
+            created.append(target)
+            entries[path] = digest(target)
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(manifest, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w") as stream:
+            json.dump({"schema_version": 1, "files": entries}, stream, indent=2, sort_keys=True)
+        print("Installed inert files; observation is not enabled.")
+    except Exception:
+        for target in reversed(created):
+            target.unlink(missing_ok=True)
+        raise
+
+
+def uninstall(root):
+    manifest = destination(root, MANIFEST)
+    if manifest.is_symlink():
+        raise RuntimeError("manifest symlink refused")
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    if data.get("schema_version") != 1 or set(data.get("files", {})) != set(FILES.values()):
+        raise RuntimeError("invalid manifest; refusing removal")
+    if root == Path("/"):
+        rule = Path("/etc/udev/rules.d/70-usbgate.rules")
+        if rule.exists() or rule.is_symlink():
+            raise RuntimeError("disable monitor before uninstall")
+        for name in ("usbgate-reconcile.timer", "usbgate-reconcile.service"):
+            result = subprocess.run(["/usr/bin/systemctl", "is-active", name],
+                                    capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                raise RuntimeError(f"{name} is active; refusing removal")
+    for path, expected in data["files"].items():
+        target = destination(root, path)
+        if target.is_symlink() or not target.is_file() or digest(target) != expected:
+            raise RuntimeError(f"file modified or missing; refusing removal: {path}")
+    for path in data["files"]:
+        destination(root, path).unlink()
+    manifest.unlink()
+    print("Removed manifest-owned files only; other data retained.")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Inert install/uninstall helper")
+    parser.add_argument("action", choices=("install", "uninstall"))
+    parser.add_argument("--root", type=Path, default=Path("/"))
+    args = parser.parse_args()
+    if args.root == Path("/") and os.geteuid() != 0:
+        parser.error("live installation requires root")
+    try:
+        (install if args.action == "install" else uninstall)(args.root)
+        return 0
+    except (OSError, ValueError, RuntimeError) as exc:
+        print(f"usbgate install: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
