@@ -54,11 +54,24 @@ on this draft branch:
 - After physical reconnection, `demo status` again reported the grant
   and service active, with systemd independently reporting `active`.
 
+- With the demo disabled, the maintainer tried to start
+  `presence-demo.service` manually; the service remained inactive and
+  the grant absent (`state=enrolled`).
+- Explicit re-enable restored both the grant and the running service.
+- After reboot with the stick connected, SSH returned, the safety
+  timer was active, and both grant and disposable service were active.
+- A Python-independent manual recovery was executed successfully:
+  the timer and worker were stopped, the project-owned udev rule
+  removed and reloaded, the demo grant revoked, the demo service
+  stopped, and the saved policy moved aside. Subsequent CLI checks
+  reported `state=unconfigured`, no grant, service inactive and
+  timer inactive.
+
 This is **evidence of the basic happy path**, not proof of full security.
 No raw serial, actual fingerprint or hostname is published here. The
 exact stop latency, whether udev or the timer performed each transition,
-quick reconnect before grace expiry, restart and reboot behavior, manual
-start denial, timer loss and corrupt-policy recovery remain unverified.
+quick reconnect before grace expiry, timer loss, corrupt-policy recovery,
+complete source-based uninstall and post-uninstall cleanup remain unverified.
 
 ## Validation still needed on the real notebook
 
@@ -68,7 +81,7 @@ start denial, timer loss and corrupt-policy recovery remain unverified.
 4. Verify physical unplug with grace, reconnection and repeated worker cycles.
 5. Confirm manual start while grant absent cannot run the demo.
 6. Verify fail-closed behavior on timer loss and invalid applied policy.
-7. Verify disable/reset, manual recovery, uninstall and reboot.
+7. Verify CLI reset and source-based uninstall, including leftover policy backups.
 8. Measure systemd timer/udev path separately; update published evidence.
 
 These are tests to perform, **not claims of having performed them**.
