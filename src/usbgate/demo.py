@@ -171,7 +171,8 @@ def reconcile(state, observations):
                 systemctl("start", SERVICE)
                 if not service_active():
                     raise RuntimeError("demo start not active")
-        elif transition == "pending" and not observed and GRANT.is_file():
+        elif (transition == "pending" and policy["fingerprint"] not in observations
+              and GRANT.is_file()):
             # Allow at most the persisted 10-second observation grace.
             return
         else:
