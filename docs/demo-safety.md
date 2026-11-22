@@ -7,8 +7,8 @@ service/socket enforcement. The controlled unit is hardcoded to
 (`DynamicUser=yes`) and does no networking or application work.
 This replaced the original `User=nobody` configuration after the maintainer's
 Debian 13 `systemd-analyze verify` output warned that the shared nobody
-account is unsafe for this purpose. The replacement requires a fresh
-`systemd-analyze verify` check on the target notebook.
+account is unsafe for this purpose. The maintainer subsequently reran `systemd-analyze verify` on the target
+Debian 13 notebook after this change; it completed without warnings.
 
 The demo enrollment accepts only one currently connected USB storage device
 with a non-empty, unambiguous serial-based descriptor fingerprint. Descriptor
@@ -33,7 +33,34 @@ No source files, unit IDs or subprocess arguments come from the USB.
 Only `presence-demo.service` is started or stopped; SSH, network,
 firewalls, PAM, Docker and other services remain untouched.
 
-## Validation needed on the real notebook
+## Physical notebook observations — 2026-11-22
+
+The maintainer reported the following outputs from the Debian 13 notebook
+on this draft branch:
+
+- The full **41-test suite passed**; `systemd-analyze verify` completed
+  without output after the dynamic-user change.
+- `sudo make install` installed inert files, and `demo status`
+  initially reported `state=unconfigured`, no grant and an inactive demo.
+- The read-only `inspect-unit presence-demo.service` preflight passed.
+- Explicit `monitor enable` reported observation only. An explicitly
+  enrolled USB storage fingerprint remained disabled until `demo enable`.
+- With the USB stick connected, `demo enable` reported success and
+  `demo status` reported enabled, grant present, service active;
+  systemd separately reported `active`.
+- After physical removal, `demo status` reported grant absent and service
+  inactive; the observer recorded the device `absent` and the safety
+  timer `active`.
+- After physical reconnection, `demo status` again reported the grant
+  and service active, with systemd independently reporting `active`.
+
+This is **evidence of the basic happy path**, not proof of full security.
+No raw serial, actual fingerprint or hostname is published here. The
+exact stop latency, whether udev or the timer performed each transition,
+quick reconnect before grace expiry, restart and reboot behavior, manual
+start denial, timer loss and corrupt-policy recovery remain unverified.
+
+## Validation still needed on the real notebook
 
 1. Run new unit/CI tests.
 2. Verify inert install and a clean, refused unconfigured demo.
