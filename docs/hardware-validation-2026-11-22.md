@@ -1,5 +1,7 @@
 # Physical Debian 13 notebook validation — 2026-11-22
 
+> **Historical observation-only baseline (PR #4).** This file preserves the initial observer session and should not be read as the complete validation state of the later disposable demo. See [demo gate physical evidence](demo-safety.md) for subsequent tests.
+
 This is a concise evidence record of commands executed by the maintainer on the physical headless notebook over SSH, **before the follow-up hardening commit**. Identifiers and addresses are intentionally omitted.
 
 ## Environment

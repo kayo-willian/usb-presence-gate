@@ -111,7 +111,8 @@ def save_state(data):
 
 def observe_once(grace=10, scan=None, clock=None, delay=None, current_boot=None):
     """Persist first absence; wait its remainder; rescan even without new USB events."""
-    scan = scan or (lambda: set(devices()))
+    native_scan = scan is None
+    scan = scan or devices
     clock = clock or (lambda: time.clock_gettime(time.CLOCK_BOOTTIME))
     delay = delay or time.sleep
     current_boot = current_boot or boot_id()
@@ -120,11 +121,16 @@ def observe_once(grace=10, scan=None, clock=None, delay=None, current_boot=None)
         fcntl.flock(lock, fcntl.LOCK_EX)
         previous = load_state()
         for _ in range(3):
-            state, events, remaining = advance(previous, scan(), clock(), current_boot, grace)
+            found = scan()
+            observations = found if isinstance(found, dict) else {key: {} for key in found}
+            state, events, remaining = advance(previous, set(observations), clock(), current_boot, grace)
             save_state(state)
             for event, fingerprint in events:
                 syslog.openlog(ident="usbgate")
                 syslog.syslog(syslog.LOG_INFO, f"event={event} fingerprint={fingerprint} mode=observe")
+            if native_scan:
+                from .demo import reconcile
+                reconcile(state, observations)
             if remaining is None:
                 return state
             previous = state
@@ -157,8 +163,13 @@ def monitor(enable):
         raise RuntimeError("monitor requires root")
     if not SOURCE_RULE.is_file():
         raise RuntimeError("install the tool first with sudo make install")
-    if not enable and has_enrollment():
-        raise RuntimeError("policy drop-ins detected; refusing to disable observation")
+    if not enable:
+        from .demo import read_policy
+        policy = read_policy()
+        if policy and policy["enabled"]:
+            raise RuntimeError("disable the demo gate before disabling USB observation")
+        if has_enrollment():
+            raise RuntimeError("policy drop-ins detected; refusing to disable observation")
     errors = []
     if enable:
         if RULE.is_symlink():
@@ -201,8 +212,11 @@ def monitor(enable):
 
 def status(json_mode=False):
     state = load_state()
+    from .demo import status as demo_status
+    demo = demo_status()
     output = {"mode": "observe" if RULE.exists() else "inert",
-              "timer_active": timer_active(), "enforcement": False,
+              "timer_active": timer_active(), "enforcement": demo["state"] == "enabled",
+              "demo": demo,
               "boot_id_match": state.get("boot_id") == boot_id(),
               "devices": state.get("devices", {})}
     if json_mode:
@@ -223,7 +237,7 @@ def doctor():
               "state_available": STATE.exists()}
     for key, value in checks.items():
         print(f"{key}: {value}")
-    print("Observation only; no enrollment, authentication, or service control.")
+    print("USB descriptors are not authentication; demo control requires explicit enrollment.")
 
 
 def main(argv=None):
@@ -238,6 +252,9 @@ def main(argv=None):
     p.add_argument("--json", action="store_true")
     p = sub.add_parser("monitor", help="Enable or disable observation only")
     p.add_argument("mode", choices=("enable", "disable"))
+    p = sub.add_parser("demo", help="Opt-in control of one disposable demo service only")
+    p.add_argument("mode", choices=("enroll", "enable", "disable", "reset", "status"))
+    p.add_argument("fingerprint", nargs="?")
     p = sub.add_parser("reconcile", help="Internal observation worker")
     p.add_argument("--observe", action="store_true", required=True)
     args = parser.parse_args(argv)
@@ -252,12 +269,25 @@ def main(argv=None):
             status(args.json)
         elif args.action == "monitor":
             monitor(args.mode == "enable")
+        elif args.action == "demo":
+            from . import demo
+            if args.mode == "status":
+                print(json.dumps(demo.status(), indent=2, sort_keys=True))
+            else:
+                if args.mode == "enroll":
+                    if args.fingerprint is None:
+                        raise ValueError("demo enroll requires a fingerprint")
+                    demo.lock_and_run(demo.enroll, args.fingerprint)
+                else:
+                    if args.fingerprint is not None:
+                        raise ValueError("only demo enroll accepts a fingerprint")
+                    demo.lock_and_run(getattr(demo, args.mode))
         elif args.action == "reconcile":
             if os.geteuid() != 0:
                 raise RuntimeError("reconcile requires root")
             observe_once()
         return 0
-    except (OSError, ValueError, RuntimeError) as exc:
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         print(f"usbgate: {exc}", file=sys.stderr)
         return 1
 
