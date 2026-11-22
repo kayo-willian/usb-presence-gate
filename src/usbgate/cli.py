@@ -13,6 +13,7 @@ import tempfile
 import time
 from . import __version__
 from .observe import advance
+from .policy import inspect_unit
 
 SYSFS = Path("/sys/bus/usb/devices")
 RUNTIME = Path("/run/usbgate")
@@ -231,6 +232,8 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="action", required=True)
     sub.add_parser("scan", help="Read current USB descriptors without raw serials")
     sub.add_parser("doctor", help="Read-only host checks")
+    p = sub.add_parser("inspect-unit", help="Read-only candidate review; never enrolls")
+    p.add_argument("unit", help="Canonical locally managed .service or .socket unit")
     p = sub.add_parser("status", help="Read the observation cache")
     p.add_argument("--json", action="store_true")
     p = sub.add_parser("monitor", help="Enable or disable observation only")
@@ -243,6 +246,8 @@ def main(argv=None):
             print(json.dumps(devices(), indent=2, sort_keys=True))
         elif args.action == "doctor":
             doctor()
+        elif args.action == "inspect-unit":
+            print(json.dumps(inspect_unit(args.unit), indent=2, sort_keys=True))
         elif args.action == "status":
             status(args.json)
         elif args.action == "monitor":

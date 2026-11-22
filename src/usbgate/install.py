@@ -15,6 +15,7 @@ FILES = {
     "src/usbgate/__init__.py": "/usr/local/lib/usbgate/usbgate/__init__.py",
     "src/usbgate/cli.py": "/usr/local/lib/usbgate/usbgate/cli.py",
     "src/usbgate/observe.py": "/usr/local/lib/usbgate/usbgate/observe.py",
+    "src/usbgate/policy.py": "/usr/local/lib/usbgate/usbgate/policy.py",
     "packaging/systemd/usbgate-reconcile.service": "/etc/systemd/system/usbgate-reconcile.service",
     "packaging/systemd/usbgate-reconcile.timer": "/etc/systemd/system/usbgate-reconcile.timer",
     "packaging/udev/70-usbgate.rules": "/usr/local/lib/usbgate/packaging/udev/70-usbgate.rules",
