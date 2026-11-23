@@ -164,6 +164,11 @@ sudo systemctl is-active presence-demo.service
 
 Expected with the stick present: `state: enabled`, `grant_file: true`, `service_active: true` and systemd `active`. Only `presence-demo.service` is controlled.
 
+While the policy is armed, a successful scan can restart a manually stopped
+demo if the selected USB remains eligible. Use `demo disable` for a lasting
+stop. If a command is interrupted, check `demo status` and the
+[administrative recovery procedure](docs/recovery.md#interrupted-administrative-commands).
+
 ### 6. Physically unplug, observe the stop, then reconnect
 
 Remove the USB stick. **Do not remove the host's internal storage or USB network adapter.** Wait roughly 20 seconds for the usual udev-delivered event and grace period, then check:

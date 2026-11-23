@@ -1,4 +1,5 @@
 """Read-only USB observer and explicit observation lifecycle."""
+from contextlib import contextmanager
 import argparse
 import fcntl
 import hashlib
@@ -123,6 +124,16 @@ def record_observation(previous, observations, now, current_boot, grace=10):
     return state, remaining
 
 
+@contextmanager
+def locked(path):
+    RUNTIME.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if RUNTIME.is_symlink():
+        raise RuntimeError("runtime symlink refused")
+    with path.open("a+") as file:
+        fcntl.flock(file, fcntl.LOCK_EX)
+        yield
+
+
 def observe_once(grace=10, scan=None, clock=None, delay=None, current_boot=None):
     """Persist first absence; wait its remainder; rescan even without new USB events."""
     from . import demo
@@ -130,9 +141,7 @@ def observe_once(grace=10, scan=None, clock=None, delay=None, current_boot=None)
     clock = clock or (lambda: time.clock_gettime(time.CLOCK_BOOTTIME))
     delay = delay or time.sleep
     current_boot = current_boot or boot_id()
-    RUNTIME.mkdir(parents=True, mode=0o700, exist_ok=True)
-    with LOCK.open("a+") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
+    with locked(LOCK):
         previous = load_state()
         for _ in range(3):
             found = scan()
@@ -163,28 +172,54 @@ def has_enrollment():
 
 
 def monitor(enable):
-    if os.geteuid() != 0:
-        raise RuntimeError("monitor requires root")
+    from . import demo
+    demo.require_root()
     if not SOURCE_RULE.is_file():
         raise RuntimeError("install the tool first with sudo make install")
-    if not enable:
-        from .demo import read_policy
-        policy = read_policy()
-        if policy and policy["enabled"]:
-            raise RuntimeError("disable the demo gate before disabling USB observation")
-        if has_enrollment():
-            raise RuntimeError("policy drop-ins detected; refusing to disable observation")
+    with locked(RUNTIME / "admin.lock"):
+        with locked(LOCK):
+            policy = demo.read_policy()
+            armed = policy and policy["enabled"]
+            if armed and (not enable or demo.inhibited()):
+                raise RuntimeError("disable the demo gate before changing USB observation")
+            if not enable and has_enrollment():
+                raise RuntimeError("policy drop-ins detected; refusing to disable observation")
+            rule_content = SOURCE_RULE.read_bytes()
+            if enable and (RULE.is_symlink() or (RULE.exists() and RULE.read_bytes() != rule_content)):
+                raise RuntimeError("udev rule differs from project-owned file or is a symlink")
+            if armed and RULE.is_file() and timer_active():
+                print("Observation enabled.")
+                return
+            demo.inhibit()
+            try:
+                demo.close_demo()
+            except RuntimeError as exc:
+                raise RuntimeError(f"monitor transition inhibited: {exc}; retry after recovery") from exc
+        # A worker started or stopped below can take LOCK; it never takes admin.lock.
+        try:
+            configure_monitor(enable, rule_content)
+            with locked(LOCK):
+                target = "active" if enable else "inactive"
+                if unit_state(TIMER) != target or RULE.exists() != enable:
+                    raise RuntimeError("monitor configuration unconfirmed")
+                if not enable:
+                    if unit_state(SERVICE) != "inactive":
+                        raise RuntimeError("observer shutdown unconfirmed")
+                    demo.close_demo()
+                demo.INHIBIT.unlink()
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+            raise RuntimeError(f"monitor transition incomplete: {exc}; authorization inhibited; "
+                               "retry monitor setup or shutdown") from exc
+    print("Observation enabled." if enable else "Observation disabled.")
+
+
+def configure_monitor(enable, rule_content):
     errors = []
     if enable:
-        if RULE.is_symlink():
-            raise RuntimeError("udev rule is a symlink")
-        content = SOURCE_RULE.read_bytes()
-        if RULE.exists() and RULE.read_bytes() != content:
-            raise RuntimeError("udev rule differs from project-owned file")
         if not RULE.exists():
             fd = os.open(RULE, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
             with os.fdopen(fd, "wb") as stream:
-                stream.write(content)
+                stream.write(rule_content)
         actions = [
             ("/usr/bin/systemctl", "daemon-reload"),
             ("/usr/bin/udevadm", "control", "--reload"),
@@ -194,16 +229,16 @@ def monitor(enable):
     else:
         actions = [
             ("/usr/bin/systemctl", "disable", "--now", TIMER),
-            ("/usr/bin/systemctl", "stop", SERVICE),
         ]
         if RULE.is_symlink():
             errors.append("udev rule symlink left in place")
         elif RULE.exists():
-            if RULE.read_bytes() != SOURCE_RULE.read_bytes():
+            if RULE.read_bytes() != rule_content:
                 errors.append("modified udev rule left in place")
             else:
                 RULE.unlink()
-        actions.append(("/usr/bin/udevadm", "control", "--reload"))
+        actions.extend([("/usr/bin/udevadm", "control", "--reload"),
+                        ("/usr/bin/systemctl", "stop", SERVICE)])
     for args in actions:
         try:
             subprocess.run(args, capture_output=True, text=True, check=True, timeout=30)
@@ -211,15 +246,16 @@ def monitor(enable):
             errors.append(f"{args[0]} {args[1]}: {exc}")
     if errors:
         raise RuntimeError("; ".join(errors))
-    print("Observation enabled." if enable else "Observation disabled.")
 
 
 def status(json_mode=False):
     state = load_state()
     from .demo import status as demo_status
     demo = demo_status()
-    output = {"mode": "observe" if RULE.exists() else "inert",
-              "timer_active": timer_active(), "enforcement": demo["state"] == "enabled",
+    mode = "observe" if RULE.exists() else "inert"
+    output = {"mode": "inhibited" if demo["authorization_inhibited"] else mode,
+              "timer_active": timer_active(),
+              "enforcement": demo["state"] == "enabled" and not demo["authorization_inhibited"],
               "demo": demo,
               "boot_id_match": state.get("boot_id") == boot_id(),
               "devices": state.get("devices", {})}

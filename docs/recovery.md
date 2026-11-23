@@ -57,6 +57,29 @@ the timer, worker and demo before deleting files. A missing unit, pending job,
 failed state or unreadable manager response leaves the installed files in place.
 Inspect the manager or restore the expected unit definitions before retrying.
 
+### Interrupted administrative commands
+
+Check `sudo /usr/local/sbin/usbgate demo status` for policy, grant, service
+state and `authorization_inhibited`. The marker lives at
+`/var/lib/usbgate/authorization-inhibited`. It survives process exit and a
+normal reboot. A worker that sees it attempts verified closure. The locks in
+`/run` are automatically released on process exit.
+
+After correcting the reported filesystem or manager failure, retry
+`demo disable` for an enrolled policy, then retry `monitor disable` or
+`monitor enable` according to the desired monitoring state. These commands
+work without the USB. A successful monitor transition clears a stale marker
+only after checking its result. An armed policy with a stale marker must be
+disarmed first. Preserve the marker during Python-independent recovery below.
+It can remain after manual uninstall and will inhibit a later installation
+until monitoring is configured successfully.
+
+If the disabled policy and the independent marker both fail to persist, an
+armed policy can authorize a later start. Inspect the reported closure outcome
+and use manual recovery if necessary. A failed stop can leave a process active
+even when future authorization is blocked. Sudden power loss, external root
+changes, and manager failure have no demonstrated recovery deadline.
+
 ## C. Manual recovery without Python (tested)
 
 The procedure below assumes the original project units and relationships.
