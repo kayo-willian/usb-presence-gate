@@ -57,7 +57,11 @@ class ObservationTests(unittest.TestCase):
                 called.append(args[1])
                 if args[1] == "disable":
                     raise OSError("simulated failure")
-            with patch.object(cli, "RULE", rule), \
+            with patch.object(cli, "RUNTIME", root), \
+                 patch.object(cli, "LOCK", root / "lock"), \
+                 patch.object(demo, "INHIBIT", root / "inhibit"), \
+                 patch.object(demo, "close_demo"), \
+                 patch.object(cli, "RULE", rule), \
                  patch.object(cli, "SOURCE_RULE", source), \
                  patch.object(demo, "POLICY", root / "demo.json"), \
                  patch.object(cli, "has_enrollment", return_value=False), \
@@ -66,7 +70,7 @@ class ObservationTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     cli.monitor(False)
             self.assertFalse(rule.exists())
-            self.assertEqual(called, ["disable", "stop", "control"])
+            self.assertEqual(called, ["disable", "control", "stop"])
 
 
 class DeviceScanTests(unittest.TestCase):
@@ -136,7 +140,12 @@ class AdditionalLifecycleTests(unittest.TestCase):
             source, rule = root / "source", root / "rule"
             source.write_text("owned")
             rule.write_text("foreign")
-            with patch.object(cli, "SOURCE_RULE", source), \
+            with patch.object(cli, "RUNTIME", root), \
+                 patch.object(cli, "LOCK", root / "lock"), \
+                 patch.object(demo, "INHIBIT", root / "inhibit"), \
+                 patch.object(demo, "close_demo"), \
+                 patch.object(cli, "SOURCE_RULE", source), \
+                 patch.object(demo, "POLICY", root / "policy"), \
                  patch.object(cli, "RULE", rule), \
                  patch.object(cli.os, "geteuid", return_value=0), \
                  patch.object(cli.subprocess, "run") as run:

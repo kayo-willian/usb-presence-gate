@@ -7,6 +7,14 @@ from unittest.mock import Mock, patch
 from usbgate import cli, demo
 
 
+def setUpModule():
+    directory = unittest.enterModuleContext(tempfile.TemporaryDirectory())
+    root = Path(directory)
+    for module, name, value in ((cli, "RUNTIME", root), (cli, "LOCK", root / "lock"),
+                                (demo, "INHIBIT", root / "inhibit")):
+        unittest.enterModuleContext(patch.object(module, name, value))
+
+
 class DemoPolicyTests(unittest.TestCase):
     def test_identity_requires_unique_serial_storage(self):
         policy = {"fingerprint": "a" * 12}
@@ -172,19 +180,19 @@ class DemoReconciliationTests(unittest.TestCase):
                 closer.assert_called_once()
 
 
-    def test_disable_stops_before_disarming(self):
+    def test_disable_disarms_before_stopping(self):
         policy = self.policy()
         events = []
         with patch.object(demo, "read_policy", return_value=policy), \
              patch.object(demo, "close_demo", side_effect=lambda: events.append("stop")), \
              patch.object(demo, "save_policy", side_effect=lambda p: events.append(("save", p["enabled"]))):
             demo.disable()
-        self.assertEqual(events, ["stop", ("save", False)])
+        self.assertEqual(events, [("save", False), "stop"])
 
     def test_enable_refuses_inactive_safety_timer(self):
         with patch.object(demo, "read_policy", return_value=dict(self.policy(), enabled=False)), \
              patch.object(demo, "verify_unit"), \
-             patch.object(demo, "RULE", Path("/temporary/fictional/missing/rule")), \
+             patch.object(demo, "RULE", Path(__file__)), \
              patch.object(demo, "timer_active", return_value=False), \
              patch.object(demo, "save_policy") as writer:
             with self.assertRaises(RuntimeError):
@@ -205,6 +213,7 @@ class DemoStartFailureTests(unittest.TestCase):
                  patch.object(demo, "read_policy", return_value=policy), \
                  patch.object(demo, "verify_unit"), \
                  patch.object(demo, "timer_active", return_value=True), \
+                 patch.object(demo, "unit_state", return_value="inactive"), \
                  patch.object(demo, "open_grant", return_value=True), \
                  patch.object(demo, "systemctl", side_effect=subprocess.CalledProcessError(1, "systemctl start")), \
                  patch.object(demo, "close_demo") as closer:

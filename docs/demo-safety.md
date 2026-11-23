@@ -49,6 +49,39 @@ Manual recovery works independently of Python and USB. The only demo actuator
 target is `presence-demo.service`. USB fields supply neither unit names nor
 subprocess arguments.
 
+## Administrative transitions
+
+All mutating monitor and demo commands take `/run/usbgate/admin.lock` first.
+They take the observer lock when reading or changing authorization. The worker
+only takes the observer lock. A monitor command records a persistent inhibit
+marker and closes the demo under that lock, then releases the observer lock
+before asking systemd to start or stop the worker. A worker can finish during
+that wait and can only close the demo while the marker exists. The monitor
+clears the marker after the commands and final state checks succeed.
+
+Initial enable commits the USB observation and checks the fixed unit and
+manager before opening the grant. The policy remains disabled until the
+service is confirmed active and the monitor is checked again. A worker after
+an interruption before the policy commit closes any leftover grant or demo.
+After the commit, activation stands even if the CLI was killed before printing
+success. A reported activation failure attempts disarm, revocation and safe
+shutdown and reports their outcomes.
+
+Once armed, the demo follows the observed USB state. A fresh, eligible sample
+and a confirmed inactive service cause a start even if the grant already
+exists. This recovers interrupted worker starts and also reverses a manual
+service stop while the USB remains eligible. Use `demo disable` to keep it
+stopped. Failed, transitioning and unknown states cannot authorize a start.
+
+Disable records the inhibit marker and writes the disabled policy before
+closure. An incomplete operation can therefore leave a disabled policy with
+a process still running. Status exposes `authorization_inhibited` independently
+of policy and service state. See [administrative recovery](recovery.md#interrupted-administrative-commands).
+
+The concurrency tests use separate Linux processes, real file locks and
+synchronization barriers. Service responses and USB observations are simulated.
+Live Debian manager timing and reboot during a transition await validation.
+
 ## Physical notebook observations — 2026-11-22
 
 The maintainer reported the following outputs from the Debian 13 notebook

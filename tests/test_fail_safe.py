@@ -65,7 +65,7 @@ class ClosureTests(unittest.TestCase):
             (cli, "RUNTIME", root), (cli, "LOCK", root / "lock"), (cli, "STATE", root / "state"),
             (demo, "POLICY", root / "etc" / "demo.json"), (demo, "GRANT", root / "grant"),
             (demo, "RULE", root / "rule"), (demo, "UNIT", root / demo.SERVICE),
-            (demo, "MANIFEST", root / "manifest"),
+            (demo, "MANIFEST", root / "manifest"), (demo, "INHIBIT", root / "inhibit"),
         ):
             self.enterContext(patch.object(module, name, value))
         demo.RULE.touch()
@@ -124,7 +124,7 @@ class ClosureTests(unittest.TestCase):
         demo.save_policy(self.enrollment)
         observations = iter([self.present, {}, {}])
         clock = iter([1, 2, 12])
-        self.show.side_effect = [reply(demo.TIMER, "active", "waiting"),
+        self.show.side_effect = [reply(demo.TIMER, "active", "waiting"), reply(demo.SERVICE),
                                  reply(demo.SERVICE, "active", "running"),
                                  reply(demo.TIMER, "active", "waiting"),
                                  reply(demo.TIMER, "active", "waiting"),
