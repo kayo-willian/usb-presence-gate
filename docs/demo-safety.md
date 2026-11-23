@@ -16,23 +16,38 @@ with a non-empty, unambiguous serial-based descriptor fingerprint. Descriptor
 cloning, stolen devices and malicious physical devices are **not** prevented.
 No raw serial is stored; the fingerprint itself is linkable.
 
-Enable requires a verified installed unit, an enabled active safety timer and
-the observed USB descriptor. Only an explicitly enabled demo policy permits
-grant creation. A missing/corrupt policy, timer failure or descriptor mismatch
-causes the worker to remove the volatile grant and try to stop the demo.
-Removal first enters a persisted 10-second grace; it closes after the
-observed absence timer expires. A quick return cancels that absence.
+Enable checks the installed unit, active timer and current USB descriptor.
+The worker and initial enable commit the observation before granting access.
+Physical absence has a ten-second grace period measured from detection.
+An observation write failure skips that grace and attempts closure immediately.
+The command reports the write error even when closure succeeds.
 
-A scheduled worker is **not** a hard security boundary. Systemd can fail,
-udev can miss events, process termination can be delayed, and the Python
-worker can crash. The condition on the unit prevents ordinary manual starts
-when the grant is absent, but removing the grant alone cannot stop an
-already-running service. The worker explicitly requests a stop and checks it.
+The closure result accounts for both the authorization file and the running service.
 
-Manual recovery does not require Python or USB and is documented in README.
-No source files, unit IDs or subprocess arguments come from the USB.
-Only `presence-demo.service` is started or stopped; SSH, network,
-firewalls, PAM, Docker and other services remain untouched.
+- Grant removal is attempted even when the unit fails its safety check.
+  An unlink error or a refused symlink is reported alongside the service outcome.
+  A remaining grant can still satisfy the unit's start condition.
+- The worker queries the actual service even with a missing or disabled policy
+  and no grant. If shutdown is needed, it verifies the installed file against
+  the manifest and checks effective systemd properties before issuing a stop.
+  A failed safety check blocks the stop request and requires operator review.
+  After a stop request, the worker queries the manager again, including when
+  the request timed out. A confirmed stop requires the canonical, loaded unit
+  to report `inactive/dead` with an empty `Job` property.
+
+`demo status` reports `service_state` as `active`, `inactive`, `transitioning`,
+`failed`, or `unknown`. The compatibility field `service_active` is JSON
+`null` for the last three. An unknown result includes a diagnostic.
+These observations describe the instant of the manager query. Later jobs,
+a stalled worker, or an unreachable manager can still require [manual recovery](recovery.md).
+
+Offline regression tests use temporary files and simulated systemd replies,
+including interrupted communication and simultaneous persistence, revocation
+and stop failures. The physical observations below predate these changes.
+Updated failure paths and timing on the Debian notebook await hardware validation.
+Manual recovery works independently of Python and USB. The only demo actuator
+target is `presence-demo.service`. USB fields supply neither unit names nor
+subprocess arguments.
 
 ## Physical notebook observations — 2026-11-22
 

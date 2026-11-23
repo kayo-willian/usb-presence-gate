@@ -120,7 +120,7 @@ class DemoReconciliationTests(unittest.TestCase):
                  patch.object(demo, "verify_unit"), \
                  patch.object(demo, "timer_active", return_value=True), \
                  patch.object(demo, "systemctl", side_effect=fake_systemctl), \
-                 patch.object(demo, "service_active", side_effect=lambda: running[0]):
+                 patch.object(demo, "unit_state", side_effect=lambda name: "active" if running[0] else "inactive"):
                 demo.reconcile(self.state("present"), self.observations())
                 self.assertTrue(grant.is_file())
                 self.assertTrue(running[0])
@@ -208,8 +208,9 @@ class DemoStartFailureTests(unittest.TestCase):
                  patch.object(demo, "open_grant", return_value=True), \
                  patch.object(demo, "systemctl", side_effect=subprocess.CalledProcessError(1, "systemctl start")), \
                  patch.object(demo, "close_demo") as closer:
-                with self.assertRaises(subprocess.CalledProcessError):
+                with self.assertRaisesRegex(RuntimeError, "systemctl start") as failure:
                     demo.reconcile(state, observations)
+                self.assertIsInstance(failure.exception.__cause__, subprocess.CalledProcessError)
                 closer.assert_called_once()
 
     def test_pending_clone_does_not_keep_existing_grant(self):

@@ -15,6 +15,8 @@ import subprocess
 import tempfile
 import time
 
+from .policy import unit_state
+
 POLICY = Path("/etc/usbgate/demo.json")
 GRANT = Path("/run/usbgate/demo-grant")
 UNIT = Path("/etc/systemd/system/presence-demo.service")
@@ -35,12 +37,8 @@ def systemctl(*args, check=True):
                           capture_output=True, text=True, timeout=15)
 
 
-def service_active():
-    return systemctl("is-active", SERVICE, check=False).stdout.strip() == "active"
-
-
 def timer_active():
-    return systemctl("is-active", TIMER, check=False).stdout.strip() == "active"
+    return unit_state(TIMER) == "active"
 
 
 def read_policy():
@@ -102,7 +100,7 @@ def verify_unit():
     try:
         inspect_unit(SERVICE)
     except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
-        raise RuntimeError("demo systemd unit fails safety preflight") from error
+        raise RuntimeError(f"demo systemd unit fails safety preflight: {error}") from error
 
 
 def revoke():
@@ -111,16 +109,70 @@ def revoke():
     GRANT.unlink(missing_ok=True)
 
 
-def stop_demo():
-    """Stop and verify only the project-owned disposable service."""
-    systemctl("stop", SERVICE)
-    if service_active():
-        raise RuntimeError("demo service still active after stop")
+def stop_demo(*, stop_allowed=True):
+    """Stop only a verified unit, then check the manager even if stop failed."""
+    errors = []
+    try:
+        state = unit_state(SERVICE)
+    except RuntimeError as exc:
+        state = "unknown"
+        errors.append(str(exc))
+    if state == "inactive":
+        return
+    if not stop_allowed:
+        raise RuntimeError("; ".join([*errors, f"unsafe to stop; service state: {state}"]))
+    try:
+        verify_unit()
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+        raise RuntimeError("; ".join([*errors, f"unsafe to stop: {exc}; service state: {state}"])) from exc
+
+    try:
+        systemctl("stop", SERVICE)
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        errors.append(f"stop request failed: {exc}")
+    try:
+        state = unit_state(SERVICE)
+    except RuntimeError as exc:
+        raise RuntimeError("; ".join([*errors, f"inactivity unconfirmed: {exc}"])) from exc
+    if state != "inactive":
+        errors.append(f"inactivity unconfirmed: service is {state}")
+    elif errors:
+        errors.append("service confirmed inactive")
+    if errors:
+        raise RuntimeError("; ".join(errors))
 
 
-def close_demo():
-    revoke()
-    stop_demo()
+def close_demo(*, stop_allowed=True):
+    """Report both grant and unit outcomes when closure is incomplete."""
+    try:
+        revoke()
+    except (OSError, RuntimeError) as exc:
+        grant_error = f"grant revocation failed: {exc}"
+    else:
+        grant_error = None
+    try:
+        stop_demo(stop_allowed=stop_allowed)
+    except RuntimeError as exc:
+        raise RuntimeError(f"{grant_error or 'grant absent'}; {exc}; recovery required") from exc
+    if grant_error:
+        raise RuntimeError(f"{grant_error}; service confirmed inactive; recovery required")
+
+
+def close_after_error(context, cause, *, stop_allowed=True):
+    try:
+        close_demo(stop_allowed=stop_allowed)
+    except RuntimeError as exc:
+        outcome = str(exc)
+    else:
+        outcome = "grant absent; service confirmed inactive"
+    raise RuntimeError(f"{context}: {cause}; {outcome}") from cause
+
+
+def verify_before_open():
+    try:
+        verify_unit()
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+        close_after_error("unit safety verification failed; recovery required", exc, stop_allowed=False)
 
 
 def open_grant():
@@ -146,19 +198,13 @@ def reconcile(state, observations):
     """Called by the root observation worker under its shared flock."""
     try:
         policy = read_policy()
-    except RuntimeError:
-        close_demo()  # fail closed on corrupted/unsafe applied policy
-        raise
-    if policy is None:
-        if GRANT.exists() or GRANT.is_symlink():
-            close_demo()
+    except (RuntimeError, OSError) as exc:
+        close_after_error("could not read demo policy", exc)
+    if not policy or not policy["enabled"]:
+        close_demo()
         return
-    if not policy["enabled"]:
-        if GRANT.exists() or GRANT.is_symlink():
-            close_demo()
-        return
+    verify_before_open()
     try:
-        verify_unit()
         if not RULE.is_file() or not timer_active():
             raise RuntimeError("safety monitor unavailable")
         observed = key_present(policy, observations)
@@ -169,17 +215,16 @@ def reconcile(state, observations):
             # unique storage identifier and the active safety timer.
             if open_grant():
                 systemctl("start", SERVICE)
-                if not service_active():
+                if unit_state(SERVICE) != "active":
                     raise RuntimeError("demo start not active")
-        elif (transition == "pending" and policy["fingerprint"] not in observations
-              and GRANT.is_file()):
+            return
+        if (transition == "pending" and policy["fingerprint"] not in observations
+                and GRANT.is_file()):
             # Allow at most the persisted 10-second observation grace.
             return
-        else:
-            close_demo()
-    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
-        close_demo()
-        raise
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+        close_after_error("demo reconciliation failed", exc)
+    close_demo()
 
 
 def lock_and_run(operation, *args):
@@ -208,23 +253,22 @@ def enroll(fingerprint):
 
 
 def enable():
-    from .cli import devices, boot_id, STATE
-    from .observe import advance
+    from .cli import devices, boot_id, load_state, record_observation
     policy = read_policy()
     if not policy:
         raise RuntimeError("enroll a USB fingerprint before enabling")
     if policy["enabled"]:
         raise RuntimeError("demo is already enabled")
-    verify_unit()
+    verify_before_open()
     if not RULE.is_file() or not timer_active():
         raise RuntimeError("enable USB observation and its safety timer first")
-    if service_active():
-        raise RuntimeError("demo service already active; refusing unmanaged takeover")
+    if unit_state(SERVICE) != "inactive":
+        raise RuntimeError("demo service must be confirmed inactive before enable")
     current = devices()
     if not key_present(policy, current):
         raise RuntimeError("enrolled USB device must be present and unambiguous")
+    state, _ = record_observation(load_state(), current, time.clock_gettime(time.CLOCK_BOOTTIME), boot_id())
     save_policy(dict(policy, enabled=True))
-    state, _, _ = advance({}, set(current), time.clock_gettime(time.CLOCK_BOOTTIME), boot_id())
     reconcile(state, current)
     print("Demo gate enabled for the disposable presence-demo.service only.")
 
@@ -244,7 +288,7 @@ def reset():
         raise RuntimeError("demo not enrolled")
     if policy["enabled"]:
         raise RuntimeError("disable the demo gate before reset")
-    if GRANT.exists() or GRANT.is_symlink() or service_active():
+    if GRANT.exists() or GRANT.is_symlink() or unit_state(SERVICE) != "inactive":
         raise RuntimeError("grant or demo activity remains; refuse reset")
     POLICY.unlink()
     print("Demo enrollment removed; no service affected.")
@@ -256,10 +300,18 @@ def status():
         state = "enabled" if policy and policy["enabled"] else ("enrolled" if policy else "unconfigured")
     except RuntimeError:
         state = "corrupt (recovery required)"
+    try:
+        service_state = unit_state(SERVICE)
+        detail = {}
+    except RuntimeError as exc:
+        service_state = "unknown"
+        detail = {"service_state_error": str(exc)}
     return {
         "state": state,
         "service": SERVICE,
         "grant_file": GRANT.is_file(),
-        "service_active": service_active(),
+        "service_state": service_state,
+        "service_active": {"active": True, "inactive": False}.get(service_state),
+        **detail,
         "no_general_service_control": True,
     }

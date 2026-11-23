@@ -27,6 +27,52 @@ STOP_RISK = (
 )
 
 
+def _unit_properties(name, fields, runner):
+    cmd = ["/usr/bin/systemctl", "show", "--no-pager", "--all",
+           "--property=" + ",".join(fields), name]
+    result = runner(cmd, check=False, capture_output=True, text=True, timeout=10)
+    if result.returncode:
+        raise RuntimeError(f"systemctl show {name} exited {result.returncode}: {result.stderr.strip()}")
+    data = {}
+    for line in result.stdout.splitlines():
+        key, sep, value = line.partition("=")
+        if not sep or key not in fields or key in data:
+            raise ValueError(f"{name}: malformed systemctl response")
+        data[key] = value
+    if data.keys() != set(fields):
+        raise ValueError(f"{name}: incomplete systemctl response")
+    return data
+
+
+def unit_state(name):
+    """Return a confirmed manager state. An unknown result carries its cause."""
+    fields = ("Id", "LoadState", "ActiveState", "SubState", "Job")
+    try:
+        properties = _unit_properties(name, fields, subprocess.run)
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+        raise RuntimeError(f"{name}: state unknown: {exc}") from exc
+    if properties["Id"] != name or not properties["ActiveState"] or not properties["SubState"]:
+        raise RuntimeError(f"{name}: state unknown: empty or mismatched unit properties")
+    if properties["LoadState"] != "loaded":
+        raise RuntimeError(f"{name}: state unknown: LoadState={properties['LoadState']}")
+    job = properties["Job"]
+    if job:
+        if not re.fullmatch(r"[1-9][0-9]*", job):
+            raise RuntimeError(f"{name}: state unknown: malformed Job property")
+        return "transitioning"
+    active, sub = properties["ActiveState"], properties["SubState"]
+    if active == "inactive" and sub == "dead":
+        return "inactive"
+    active_substates = ("waiting", "running", "elapsed") if name.endswith(".timer") else ("running", "exited")
+    if active == "active" and sub in active_substates:
+        return "active"
+    if active in ("activating", "deactivating", "reloading", "refreshing", "maintenance"):
+        return "transitioning"
+    if active == "failed" and sub == "failed":
+        return "failed"
+    raise RuntimeError(f"{name}: state unknown: ActiveState={active}, SubState={sub}")
+
+
 def validate_name(name):
     if not isinstance(name, str) or not UNIT.fullmatch(name):
         raise ValueError("only plain .service or .socket unit names are accepted")
@@ -39,17 +85,7 @@ def validate_name(name):
 def inspect_unit(name, runner=subprocess.run):
     """Read effective manager metadata, never authorize enforcement."""
     validate_name(name)
-    cmd = ["/usr/bin/systemctl", "show", "--no-pager",
-           "--property=" + ",".join(FIELDS), name]
-    run = runner(cmd, check=False, capture_output=True, text=True, timeout=10)
-    if run.returncode != 0:
-        raise RuntimeError("could not inspect systemd unit")
-    data = {}
-    for line in run.stdout.splitlines():
-        if "=" in line:
-            key, value = line.split("=", 1)
-            if key in FIELDS:
-                data[key] = value
+    data = _unit_properties(name, FIELDS, runner)
     if data.get("LoadState") != "loaded":
         raise ValueError("unit is not loaded")
     if data.get("Id") != name:

@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from usbgate import cli, install
+from usbgate import cli, demo, install
 
 
 class InstallTests(unittest.TestCase):
@@ -33,6 +33,7 @@ class ObservationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with patch.object(cli, "RUNTIME", Path(directory)), \
                  patch.object(cli, "LOCK", Path(directory) / "lock"), \
+                 patch.object(demo, "reconcile"), \
                  patch.object(cli, "load_state", side_effect=lambda: cache[0]), \
                  patch.object(cli, "save_state", side_effect=lambda state: cache.__setitem__(0, state)), \
                  patch.object(cli.syslog, "syslog", side_effect=lambda *args: events.append(args)):
@@ -58,6 +59,7 @@ class ObservationTests(unittest.TestCase):
                     raise OSError("simulated failure")
             with patch.object(cli, "RULE", rule), \
                  patch.object(cli, "SOURCE_RULE", source), \
+                 patch.object(demo, "POLICY", root / "demo.json"), \
                  patch.object(cli, "has_enrollment", return_value=False), \
                  patch.object(cli.os, "geteuid", return_value=0), \
                  patch.object(cli.subprocess, "run", side_effect=fake_run):

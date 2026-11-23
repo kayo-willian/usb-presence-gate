@@ -67,6 +67,13 @@ class PolicyTests(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 inspect_unit("demo-gate.service", Mock(return_value=output(**change)))
 
+    def test_missing_relationship_property_refuses_preflight(self):
+        response = output()
+        response.stdout = "\n".join(line for line in response.stdout.splitlines()
+                                    if not line.startswith("BoundBy="))
+        with self.assertRaisesRegex(ValueError, "incomplete"):
+            inspect_unit("demo-gate.service", Mock(return_value=response))
+
     def test_systemctl_error(self):
         with self.assertRaises(RuntimeError):
             inspect_unit("demo-gate.service",

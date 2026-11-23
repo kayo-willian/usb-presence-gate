@@ -103,7 +103,7 @@ systemd-analyze verify packaging/systemd/presence-demo.service
 Until that PR is merged, its review branch is `feature/demo-service-gate`. Only reviewers who intentionally want the **unmerged code** should check out that branch. The examples in this README describe the milestone after merge; until then,
 only the draft PR branch includes the demo features.
 
-Expected: all Python tests pass, and `systemd-analyze verify` reports no warnings for the demo unit.
+Expected: all Python tests pass, and `systemd-analyze verify` reports no warnings for the demo unit. Use `./bin/usbgate --help` to run the development launcher from the checkout. The installed launcher uses Debian’s `/usr/bin/python3` in isolation and loads the package under `/usr/local/lib/usbgate`. Its installation directories must be controlled by trusted administrators.
 
 ### 2. Install without activating anything
 
@@ -139,7 +139,7 @@ sudo /usr/local/sbin/usbgate status --json
 sudo systemctl is-active usbgate-reconcile.timer
 ```
 
-Expected: `Observation enabled; no service control.` and an `active` timer. In observation-only mode, the demo does not start or stop anything.
+Expected on a fresh install: `Observation enabled.`, an `active` timer, and an inactive demo. An observer finding a running demo without an enabled policy attempts verified closure.
 
 ### 5. Enroll the selected stick, then explicitly arm the demo
 
@@ -268,6 +268,8 @@ sudo rm -f /etc/usbgate/demo.json.disabled
 Use it only after verifying it is your own recovery backup. It does not remove other files, the installed program or the Git checkout. Never delete shared system directories or unrelated contents.
 
 ## Emergency recovery without Python
+
+If the worker reports `unsafe to stop`, inspect the effective demo unit and its dependencies before issuing a manual stop. See [recovery diagnostics](docs/recovery.md).
 
 If the CLI, policy or Python fails, **do not depend on the USB stick to recover**. The following uses systemd and shell commands, controls only the project-owned demo, and was exercised on the physical notebook.
 
