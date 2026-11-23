@@ -5,9 +5,11 @@ import json
 import os
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 
+from .policy import unit_state
+
+SYSTEM_ROOT = Path("/")
 PROJECT = Path(__file__).resolve().parents[2]
 MANIFEST = "/var/lib/usbgate/install-manifest.json"
 FILES = {
@@ -88,18 +90,17 @@ def uninstall(root):
     data = json.loads(manifest.read_text(encoding="utf-8"))
     if data.get("schema_version") != 1 or set(data.get("files", {})) != set(FILES.values()):
         raise RuntimeError("invalid manifest; refusing removal")
-    if root == Path("/"):
+    if root.resolve() == SYSTEM_ROOT:
         from .demo import POLICY, GRANT
         if POLICY.exists() or POLICY.is_symlink() or GRANT.exists() or GRANT.is_symlink():
             raise RuntimeError("disable and reset demo enrollment before uninstall")
-        rule = Path("/etc/udev/rules.d/70-usbgate.rules")
+        rule = destination(root, "/etc/udev/rules.d/70-usbgate.rules")
         if rule.exists() or rule.is_symlink():
             raise RuntimeError("disable monitor before uninstall")
         for name in ("usbgate-reconcile.timer", "usbgate-reconcile.service", "presence-demo.service"):
-            result = subprocess.run(["/usr/bin/systemctl", "is-active", name],
-                                    capture_output=True, text=True, timeout=10)
-            if result.returncode == 0:
-                raise RuntimeError(f"{name} is active; refusing removal")
+            state = unit_state(name)
+            if state != "inactive":
+                raise RuntimeError(f"{name} is {state}; refusing removal")
     for path, expected in data["files"].items():
         target = destination(root, path)
         ensure_safe_parents(root, target)
@@ -116,7 +117,7 @@ def main():
     parser.add_argument("action", choices=("install", "uninstall"))
     parser.add_argument("--root", type=Path, default=Path("/"))
     args = parser.parse_args()
-    if args.root == Path("/") and os.geteuid() != 0:
+    if args.root.resolve() == SYSTEM_ROOT and os.geteuid() != 0:
         parser.error("live installation requires root")
     try:
         (install if args.action == "install" else uninstall)(args.root)

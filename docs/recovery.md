@@ -52,14 +52,19 @@ sudo systemctl daemon-reload
 ```
 
 Do not bypass an uninstall refusal by forcibly removing arbitrary files.
-The installer checks its file manifest and insists that the demo is not
-enrolled or running and the project rule is inactive.
+The live installer checks the manifest and requires confirmed inactivity for
+the timer, worker and demo before deleting files. A missing unit, pending job,
+failed state or unreadable manager response leaves the installed files in place.
+Inspect the manager or restore the expected unit definitions before retrying.
 
 ## C. Manual recovery without Python (tested)
 
-The following procedure stops **only project units**, removes the
-**project-owned** USB observation rule and revokes the project grant.
-It never stops SSH, network, firewall, authentication or Docker.
+The procedure below assumes the original project units and relationships.
+If the worker reports `unsafe to stop`, first inspect the effective demo
+fragment, drop-ins and dependencies. A manual stop of a modified unit can
+propagate to another service. Resolve that discrepancy before using the stop
+step. If grant removal failed, also inspect the grant path: an inactive
+service can still be eligible for a later start.
 
 ```sh
 sudo systemctl disable --now usbgate-reconcile.timer

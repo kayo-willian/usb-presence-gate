@@ -13,7 +13,7 @@ import tempfile
 import time
 from . import __version__
 from .observe import advance
-from .policy import inspect_unit
+from .policy import inspect_unit, unit_state
 
 SYSFS = Path("/sys/bus/usb/devices")
 RUNTIME = Path("/run/usbgate")
@@ -109,9 +109,23 @@ def save_state(data):
             os.unlink(temp)
 
 
+def record_observation(previous, observations, now, current_boot, grace=10):
+    """Commit a sample under the caller's lock before it can authorize a start."""
+    from . import demo
+    state, events, remaining = advance(previous, set(observations), now, current_boot, grace)
+    try:
+        save_state(state)
+    except (OSError, ValueError, TypeError) as exc:
+        demo.close_after_error("could not persist USB observation", exc)
+    for event, fingerprint in events:
+        syslog.openlog(ident="usbgate")
+        syslog.syslog(syslog.LOG_INFO, f"event={event} fingerprint={fingerprint} mode=observe")
+    return state, remaining
+
+
 def observe_once(grace=10, scan=None, clock=None, delay=None, current_boot=None):
     """Persist first absence; wait its remainder; rescan even without new USB events."""
-    native_scan = scan is None
+    from . import demo
     scan = scan or devices
     clock = clock or (lambda: time.clock_gettime(time.CLOCK_BOOTTIME))
     delay = delay or time.sleep
@@ -123,14 +137,8 @@ def observe_once(grace=10, scan=None, clock=None, delay=None, current_boot=None)
         for _ in range(3):
             found = scan()
             observations = found if isinstance(found, dict) else {key: {} for key in found}
-            state, events, remaining = advance(previous, set(observations), clock(), current_boot, grace)
-            save_state(state)
-            for event, fingerprint in events:
-                syslog.openlog(ident="usbgate")
-                syslog.syslog(syslog.LOG_INFO, f"event={event} fingerprint={fingerprint} mode=observe")
-            if native_scan:
-                from .demo import reconcile
-                reconcile(state, observations)
+            state, remaining = record_observation(previous, observations, clock(), current_boot, grace)
+            demo.reconcile(state, observations)
             if remaining is None:
                 return state
             previous = state
@@ -138,16 +146,12 @@ def observe_once(grace=10, scan=None, clock=None, delay=None, current_boot=None)
         return state
 
 
-def command(*args, check=True):
-    return subprocess.run(["/usr/bin/systemctl", *args], check=check,
-                          capture_output=True, text=True, timeout=20)
-
-
 def timer_active():
     try:
-        return command("is-active", TIMER, check=False).stdout.strip() == "active"
-    except (OSError, subprocess.TimeoutExpired):
-        return False
+        state = unit_state(TIMER)
+    except RuntimeError:
+        return None
+    return {"active": True, "inactive": False}.get(state)
 
 
 def has_enrollment():
@@ -207,7 +211,7 @@ def monitor(enable):
             errors.append(f"{args[0]} {args[1]}: {exc}")
     if errors:
         raise RuntimeError("; ".join(errors))
-    print("Observation enabled; no service control." if enable else "Observation disabled.")
+    print("Observation enabled." if enable else "Observation disabled.")
 
 
 def status(json_mode=False):

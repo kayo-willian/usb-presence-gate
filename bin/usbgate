@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3 -IS
 """Source checkout and installed entry point."""
 import sys
 sys.dont_write_bytecode = True
 from pathlib import Path
-root = Path(__file__).resolve().parent.parent
-source = root / "src"
-sys.path.insert(0, str(source if (source / "usbgate").is_dir() else root / "lib" / "usbgate"))
+directory = Path(__file__).resolve().parent
+package_root = directory.parent / ("src" if directory.name == "bin" else "lib/usbgate")
+sys.path.insert(0, str(package_root))
 from usbgate.cli import main
 sys.exit(main())
