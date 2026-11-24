@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -68,10 +69,16 @@ class ClosureTests(unittest.TestCase):
             (demo, "MANIFEST", root / "manifest"), (demo, "INHIBIT", root / "inhibit"),
         ):
             self.enterContext(patch.object(module, name, value))
+        self.enterContext(patch.object(demo, "TRUST_UID", os.getuid()))
+        self.enterContext(patch.object(demo, "TRUST_ROOT", root))
+        def check_timer():
+            if demo.unit_state(demo.TIMER) != "active":
+                raise RuntimeError("safety monitor unavailable")
+        self.enterContext(patch.object(demo, "verify_monitor", side_effect=check_timer))
         demo.RULE.touch()
         demo.UNIT.write_text("disposable test unit")
         checksum = hashlib.sha256(demo.UNIT.read_bytes()).hexdigest()
-        demo.MANIFEST.write_text(json.dumps({"files": {str(demo.UNIT): checksum}}))
+        demo.MANIFEST.write_text(json.dumps({"schema_version": 1, "files": {str(demo.UNIT): checksum}}))
         self.preflight = self.enterContext(patch.object(policy, "inspect_unit"))
         self.show = self.enterContext(patch.object(subprocess, "run"))
         self.control = self.enterContext(patch.object(demo, "systemctl"))
@@ -219,7 +226,7 @@ class ClosureTests(unittest.TestCase):
         demo.UNIT.write_text("changed unit")
         demo.GRANT.touch()
         self.show.return_value = reply(demo.SERVICE, "active", "running")
-        with self.assertRaisesRegex(RuntimeError, "unsafe to stop.*unit differs.*recovery required"):
+        with self.assertRaisesRegex(RuntimeError, "unsafe to stop.*installed file differs.*recovery required"):
             demo.reconcile({}, {})
         self.assertFalse(demo.GRANT.exists())
         self.control.assert_not_called()
@@ -229,7 +236,7 @@ class ClosureTests(unittest.TestCase):
         demo.GRANT.touch()
         demo.UNIT.write_text("changed unit")
         self.show.return_value = reply(demo.SERVICE, "active", "running")
-        with self.assertRaisesRegex(RuntimeError, "unit differs.*grant absent.*unsafe to stop"):
+        with self.assertRaisesRegex(RuntimeError, "installed file differs.*grant absent.*unsafe to stop"):
             demo.enable()
         self.assertFalse(demo.GRANT.exists())
         self.assertFalse(demo.read_policy()["enabled"])

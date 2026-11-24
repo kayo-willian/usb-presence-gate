@@ -27,6 +27,10 @@ class AdminFixture(unittest.TestCase):
         cli.RUNTIME.mkdir(mode=0o700)
         cli.SOURCE_RULE.write_text("test rule")
         cli.RULE.write_bytes(cli.SOURCE_RULE.read_bytes())
+        self.enterContext(patch.object(demo, "TRUST_UID", os.getuid()))
+        self.enterContext(patch.object(demo, "TRUST_ROOT", root))
+        self.enterContext(patch.object(demo, "installed_bytes", side_effect=lambda path: path.read_bytes()))
+        self.enterContext(patch.object(demo, "verify_timer", side_effect=self.check_timer))
         self.timer = root / "timer"
         self.service = root / "service"
         self.timer.write_text("active")
@@ -44,6 +48,10 @@ class AdminFixture(unittest.TestCase):
         self.enterContext(patch.object(cli, "unit_state", side_effect=self.state))
         self.show = self.enterContext(patch.object(demo, "unit_state", side_effect=self.state))
         self.enterContext(patch.object(subprocess, "run", side_effect=self.configure))
+
+    def check_timer(self, *, operational=True):
+        if operational and self.state(cli.TIMER) != "active":
+            raise RuntimeError("timer inactive")
 
     def state(self, name):
         if name == demo.SERVICE:

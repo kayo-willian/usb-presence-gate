@@ -14,7 +14,7 @@ import subprocess
 import tempfile
 import time
 
-from .policy import unit_state
+from .policy import unit_state, verify_monitor_units
 
 POLICY = Path("/etc/usbgate/demo.json")
 GRANT = Path("/run/usbgate/demo-grant")
@@ -24,6 +24,9 @@ RULE = Path("/etc/udev/rules.d/70-usbgate.rules")
 TIMER = "usbgate-reconcile.timer"
 MANIFEST = Path("/var/lib/usbgate/install-manifest.json")
 INHIBIT = MANIFEST.with_name("authorization-inhibited")
+SYSTEM_UNITS = Path("/etc/systemd/system")
+TRUST_ROOT = Path("/")
+TRUST_UID = 0
 IDENTIFIER = re.compile(r"^[a-f0-9]{12}$")
 
 
@@ -37,8 +40,68 @@ def systemctl(*args, check=True):
                           capture_output=True, text=True, timeout=15)
 
 
-def timer_active():
-    return unit_state(TIMER) == "active"
+def trusted_parents(path):
+    for parent in path.parents:
+        info = parent.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid != TRUST_UID or info.st_mode & 0o022:
+            raise RuntimeError(f"untrusted directory: {parent}")
+        if parent == TRUST_ROOT:
+            return
+    raise RuntimeError(f"path outside trusted installation: {path}")
+
+
+def trusted_bytes(path):
+    trusted_parents(path)
+    # Check the opened inode. O_NONBLOCK avoids hanging on a substituted FIFO.
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(fd, "rb") as stream:
+        info = os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != TRUST_UID or info.st_mode & 0o022:
+            raise RuntimeError(f"untrusted file type, ownership or permissions: {path}")
+        return stream.read()
+
+
+def installed_bytes(path):
+    try:
+        record = json.loads(trusted_bytes(MANIFEST))
+        if type(record["schema_version"]) is not int or record["schema_version"] != 1:
+            raise ValueError("unexpected manifest version")
+        expected = record["files"][str(path)]
+        if not isinstance(expected, str) or not re.fullmatch("[0-9a-f]{64}", expected):
+            raise ValueError("invalid file digest")
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise RuntimeError(f"invalid install manifest for {path}: {exc}") from exc
+    content = trusted_bytes(path)
+    if hashlib.sha256(content).hexdigest() != expected:
+        raise RuntimeError(f"{path.name}: installed file differs from manifest")
+    return content
+
+
+def verify_rule():
+    from .cli import SOURCE_RULE
+    if trusted_bytes(RULE) != installed_bytes(SOURCE_RULE):
+        raise RuntimeError("deployed udev rule differs from installed reference")
+
+
+def verify_timer(*, operational=True):
+    from .cli import SERVICE as worker
+    timer_path = SYSTEM_UNITS / TIMER
+    installed_bytes(timer_path)
+    installed_bytes(SYSTEM_UNITS / worker)
+    verify_monitor_units(operational=operational)
+    if operational:
+        link = SYSTEM_UNITS / "timers.target.wants" / TIMER
+        trusted_parents(link)
+        if not link.is_symlink() or link.resolve(strict=True) != timer_path:
+            raise RuntimeError("persistent timers.target enablement link missing or incorrect")
+
+
+def verify_monitor():
+    try:
+        verify_rule()
+        verify_timer()
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        raise RuntimeError(f"safety monitor unavailable: {exc}") from exc
 
 
 def read_policy():
@@ -87,15 +150,7 @@ def save_policy(policy):
 
 def verify_unit():
     """Check the installed unit is the project-owned, unmodified demo."""
-    if UNIT.is_symlink() or not UNIT.is_file() or MANIFEST.is_symlink():
-        raise RuntimeError("demo unit or install manifest missing/unsafe")
-    try:
-        record = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        expected = record["files"][str(UNIT)]
-    except (OSError, ValueError, KeyError, TypeError) as error:
-        raise RuntimeError("demo install manifest invalid") from error
-    if hashlib.sha256(UNIT.read_bytes()).hexdigest() != expected:
-        raise RuntimeError("demo unit differs from installed version")
+    installed_bytes(UNIT)
     from .policy import inspect_unit
     try:
         inspect_unit(SERVICE)
@@ -239,8 +294,7 @@ def reconcile(state, observations):
         return
     verify_before_open()
     try:
-        if not RULE.is_file() or not timer_active():
-            raise RuntimeError("safety monitor unavailable")
+        verify_monitor()
         observed = key_present(policy, observations)
         record = state.get("devices", {}).get(policy["fingerprint"], {})
         transition = record.get("state")
@@ -287,8 +341,10 @@ def enable():
     if policy["enabled"]:
         raise RuntimeError("demo is already enabled")
     verify_before_open()
-    if not RULE.is_file() or not timer_active():
-        raise RuntimeError("enable USB observation and its safety timer first")
+    try:
+        verify_monitor()
+    except RuntimeError as exc:
+        close_after_error("USB observation unavailable", exc)
     if unit_state(SERVICE) != "inactive":
         raise RuntimeError("demo service must be confirmed inactive before enable")
     current = devices()
@@ -297,10 +353,11 @@ def enable():
     record_observation(load_state(), current, time.clock_gettime(time.CLOCK_BOOTTIME), boot_id())
     # Commit the armed policy last. A worker after an interrupted start sees
     # the previous disabled policy and closes any grant or process left behind.
+    verify_before_open()
     try:
+        verify_monitor()
         ensure_running()
-        if not RULE.is_file() or not timer_active():
-            raise RuntimeError("safety monitor unavailable after start")
+        verify_monitor()
         save_policy(dict(policy, enabled=True))
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         try:

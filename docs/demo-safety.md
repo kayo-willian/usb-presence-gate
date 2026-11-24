@@ -49,6 +49,59 @@ Manual recovery works independently of Python and USB. The only demo actuator
 target is `presence-demo.service`. USB fields supply neither unit names nor
 subprocess arguments.
 
+## Effective units, timer and udev
+
+Authorization trusts the root-owned installation manifest under `/var/lib/usbgate`.
+The demo, timer, worker and reference udev rule must match their installed
+SHA-256 hashes. The deployed udev rule must have identical bytes to the
+verified reference. Each checked file must be regular, root-owned and free
+of group or other write access. The same ownership and write restrictions
+apply to parent directories, and symbolic links in these paths are refused.
+A local installation with a group-writable prefix will need administrator
+review. The project never repairs permissions or overwrites a modified rule.
+
+The manager must report the single expected name and canonical fragment
+under `/etc/systemd/system/` for each unit, with no drop-ins, transient
+definition or pending daemon reload. For the demo, the preflight also checks
+its simple service type, dynamic user, system slice, manual start/stop
+eligibility, a settled service state and an empty job.
+
+The fixed-unit checks examine direct transaction relationships. They allow
+`Requires=` on the normal system slice and sysinit target, and mount
+dependencies for the root, `/tmp`, `/var` and `/var/tmp` paths used by
+private temporary directories. They allow the shutdown-target conflict and
+the shipped timer/worker trigger pair and timer installation under
+`timers.target`. Unexpected pull-ins, reverse requirements, stop propagation,
+upholding, success/failure activators, conflicts and emergency actions
+cause refusal. Pure ordering through `Before=` or `After=` does not pull
+a unit into a transaction. The generic read-only candidate inspection retains
+its narrower purpose. [Debian systemd.unit(5)](https://manpages.debian.org/trixie/systemd/systemd.unit.5.en.html)
+
+The periodic timer must report `active` and `waiting` or `running`, an empty
+job, `UnitFileState=enabled` and the expected worker in both `Unit` and
+`Triggers`. The persistent symlink under `/etc/systemd/system/timers.target.wants/`
+must resolve to the verified timer fragment. An elapsed or runtime-enabled
+timer cannot authorize the demo. The oneshot worker may be inactive between
+runs. During initial monitor setup, file and effective configuration checks
+precede activation; operational and persistent-enablement checks follow it.
+[Debian systemd.timer(5)](https://manpages.debian.org/trixie/systemd/systemd.timer.5.en.html)
+
+`doctor` and `status --json` expose `monitor_safety` as `verified` or a
+diagnostic; use sudo to read the installation manifest. `timer_active`
+continues to describe current activity alone. A monitoring failure blocks
+authorization and triggers verified closure on reconciliation. A rejected
+demo preflight leaves the worker unable to stop an active workload safely.
+Review the named fragment, relationship, rule, permissions or enablement
+before retrying recovery. A failed monitor transition retains its inhibit.
+
+These checks sample disk and manager state. They trust the installation
+source, root administrator and manager; they do not traverse the full
+transitive dependency graph or serialize external privileged changes.
+Matching rule bytes cannot confirm delivery by udev. Offline tests cover
+refusal and recovery with simulated manager replies. Effective properties
+on the physical notebook, event delivery and timer-only wakeups after boot
+still need live validation.
+
 ## Administrative transitions
 
 All mutating monitor and demo commands take `/run/usbgate/admin.lock` first.
