@@ -27,6 +27,69 @@ STOP_RISK = (
 )
 
 
+DEMO = "presence-demo.service"
+TIMER = "usbgate-reconcile.timer"
+WORKER = "usbgate-reconcile.service"
+IDENTITY = ("Id", "Names", "LoadState", "FragmentPath", "DropInPaths", "NeedDaemonReload", "Transient")
+EXTRA_RELATIONS = ("RequiredBy", "RequisiteOf", "BindsTo", "Requisite", "Upholds", "UpheldBy",
+                   "OnSuccess", "OnSuccessOf", "OnFailureOf", "WantedBy", "ConflictedBy", "Requires", "Wants")
+ACTIONS = ("SuccessAction", "FailureAction", "StartLimitAction", "JobTimeoutAction")
+TMP_MOUNTS = {"-.mount", "tmp.mount", "var.mount", "var-tmp.mount"}
+
+
+def _expect(data, **expected):
+    for field, value in expected.items():
+        if data[field] != value:
+            raise ValueError(f"{data['Id']}: unexpected {field}={data[field]!r}, expected {value!r}")
+
+
+def _fixed_identity(data, name):
+    _expect(data, Id=name, Names=name, LoadState="loaded", DropInPaths="", Transient="no",
+            FragmentPath=f"/etc/systemd/system/{name}", NeedDaemonReload="no")
+
+
+def _fixed_relationships(data, name):
+    # Ordering (Before/After) does not pull another unit into the transaction.
+    allowed = {
+        "Requires": {"sysinit.target", "system.slice"} | TMP_MOUNTS,
+        "Wants": TMP_MOUNTS,
+        "Conflicts": {"shutdown.target"}, "ConflictedBy": {"shutdown.target"},
+    }
+    if name == TIMER:
+        allowed.update(Triggers={WORKER}, WantedBy={"timers.target"})
+    if name == WORKER:
+        allowed.update(TriggeredBy={TIMER})
+    for field in (*STOP_RISK, "Conflicts", *EXTRA_RELATIONS):
+        unexpected = set(data[field].split()) - allowed.get(field, set())
+        if unexpected:
+            raise ValueError(f"{name}: unexpected {field}: {' '.join(sorted(unexpected))}")
+    required = {"sysinit.target"} if name == TIMER else {"sysinit.target", "system.slice"}
+    if not required.issubset(data["Requires"].split()) or "shutdown.target" not in data["Conflicts"].split():
+        raise ValueError(f"{name}: missing default system dependencies")
+    _expect(data, **dict.fromkeys(ACTIONS, "none"))
+
+
+def verify_monitor_units(*, expected_state):
+    """Check the fixed timer and worker without requiring the oneshot to be running."""
+    fields = IDENTITY + STOP_RISK + ("Conflicts",) + EXTRA_RELATIONS + ACTIONS
+    timer = _unit_properties(TIMER, fields + ("Unit", "UnitFileState", "ActiveState", "SubState", "Job"),
+                             subprocess.run)
+    _fixed_identity(timer, TIMER)
+    _fixed_relationships(timer, TIMER)
+    _expect(timer, Unit=WORKER, Triggers=WORKER)
+    if expected_state == "enabled":
+        _expect(timer, ActiveState="active", UnitFileState="enabled", Job="")
+        if timer["SubState"] not in ("running", "waiting"):
+            raise ValueError(f"{TIMER}: unexpected SubState={timer['SubState']!r}")
+    elif expected_state == "disabled":
+        _expect(timer, ActiveState="inactive", SubState="dead", UnitFileState="disabled", Job="", WantedBy="")
+    elif expected_state is not None:
+        raise ValueError(f"unexpected timer verification mode: {expected_state}")
+    worker = _unit_properties(WORKER, fields, subprocess.run)
+    _fixed_identity(worker, WORKER)
+    _fixed_relationships(worker, WORKER)
+
+
 def _unit_properties(name, fields, runner):
     cmd = ["/usr/bin/systemctl", "show", "--no-pager", "--all",
            "--property=" + ",".join(fields), name]
@@ -82,10 +145,37 @@ def validate_name(name):
     return name
 
 
-def inspect_unit(name, runner=subprocess.run):
+class DemoTransition(ValueError):
+    """The verified demo has a job or a service transition in progress."""
+
+
+def _check_demo_state(data, for_stop):
+    job = data["Job"]
+    if job and not re.fullmatch(r"[1-9][0-9]*", job):
+        raise ValueError(f"{DEMO}: malformed Job property")
+    active, sub = data["ActiveState"], data["SubState"]
+    transitional = active in ("activating", "deactivating", "reloading", "refreshing", "maintenance")
+    if not sub or not (transitional or (active, sub) in {
+        ("inactive", "dead"), ("active", "running"), ("failed", "failed")
+    }):
+        raise ValueError(f"{DEMO}: unconfirmed service state {active}/{sub}")
+    if (job or transitional) and not for_stop:
+        raise DemoTransition(f"{DEMO}: service transitioning ({active}/{sub}, Job={job!r})")
+
+
+def inspect_unit(name, runner=None, *, for_stop=False):
     """Read effective manager metadata, never authorize enforcement."""
     validate_name(name)
-    data = _unit_properties(name, FIELDS, runner)
+    fields = FIELDS
+    if name == DEMO:
+        fields += ("NeedDaemonReload", "Transient", "CanStart", "Job", "ActiveState", "SubState",
+                   "Type", "DynamicUser", "Slice", "RefuseManualStop", "RefuseManualStart") + EXTRA_RELATIONS + ACTIONS
+    data = _unit_properties(name, fields, runner or subprocess.run)
+    if name == DEMO:
+        _fixed_identity(data, DEMO)
+        _expect(data, CanStart="yes", Type="simple", DynamicUser="yes", Slice="system.slice",
+                RefuseManualStop="no", RefuseManualStart="no")
+        _fixed_relationships(data, DEMO)
     if data.get("LoadState") != "loaded":
         raise ValueError("unit is not loaded")
     if data.get("Id") != name:
@@ -106,6 +196,8 @@ def inspect_unit(name, runner=subprocess.run):
         risks.append("Conflicts")
     if risks:
         raise ValueError("risky systemd relationships: " + ", ".join(risks))
+    if name == DEMO:
+        _check_demo_state(data, for_stop)
     return {
         "unit": name,
         "preflight": "passed",

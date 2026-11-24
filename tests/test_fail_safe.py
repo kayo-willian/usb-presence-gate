@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -68,10 +69,16 @@ class ClosureTests(unittest.TestCase):
             (demo, "MANIFEST", root / "manifest"), (demo, "INHIBIT", root / "inhibit"),
         ):
             self.enterContext(patch.object(module, name, value))
+        self.enterContext(patch.object(demo, "TRUST_UID", os.getuid()))
+        self.enterContext(patch.object(demo, "TRUST_ROOT", root))
+        def check_timer():
+            if demo.unit_state(demo.TIMER) != "active":
+                raise RuntimeError("safety monitor unavailable")
+        self.enterContext(patch.object(demo, "verify_monitor", side_effect=check_timer))
         demo.RULE.touch()
         demo.UNIT.write_text("disposable test unit")
         checksum = hashlib.sha256(demo.UNIT.read_bytes()).hexdigest()
-        demo.MANIFEST.write_text(json.dumps({"files": {str(demo.UNIT): checksum}}))
+        demo.MANIFEST.write_text(json.dumps({"schema_version": 1, "files": {str(demo.UNIT): checksum}}))
         self.preflight = self.enterContext(patch.object(policy, "inspect_unit"))
         self.show = self.enterContext(patch.object(subprocess, "run"))
         self.control = self.enterContext(patch.object(demo, "systemctl"))
@@ -93,7 +100,7 @@ class ClosureTests(unittest.TestCase):
                 self.assertFalse(demo.GRANT.exists())
                 grant.assert_not_called()
                 self.control.assert_called_once_with("stop", demo.SERVICE)
-                self.preflight.assert_called_once_with(demo.SERVICE)
+                self.preflight.assert_called_once_with(demo.SERVICE, for_stop=True)
                 self.assertEqual(self.show.call_count, 2)
                 self.control.reset_mock()
                 self.preflight.reset_mock()
@@ -155,7 +162,7 @@ class ClosureTests(unittest.TestCase):
                        "bus unavailable", "inactivity unconfirmed", "recovery required"):
             self.assertIn(detail, str(raised.exception))
         self.assertTrue(demo.GRANT.exists())
-        self.preflight.assert_called_once_with(demo.SERVICE)
+        self.preflight.assert_called_once_with(demo.SERVICE, for_stop=True)
         self.control.assert_called_once_with("stop", demo.SERVICE)
 
     def test_disarmed_states_check_the_service_independently_of_the_grant(self):
@@ -176,7 +183,7 @@ class ClosureTests(unittest.TestCase):
                         self.assertEqual(self.show.call_count, len(answers))
                         if active:
                             self.control.assert_called_once_with("stop", demo.SERVICE)
-                            self.preflight.assert_called_once_with(demo.SERVICE)
+                            self.preflight.assert_called_once_with(demo.SERVICE, for_stop=True)
                         else:
                             self.control.assert_not_called()
                         self.control.reset_mock()
@@ -219,7 +226,7 @@ class ClosureTests(unittest.TestCase):
         demo.UNIT.write_text("changed unit")
         demo.GRANT.touch()
         self.show.return_value = reply(demo.SERVICE, "active", "running")
-        with self.assertRaisesRegex(RuntimeError, "unsafe to stop.*unit differs.*recovery required"):
+        with self.assertRaisesRegex(RuntimeError, "unsafe to stop.*installed file differs.*recovery required"):
             demo.reconcile({}, {})
         self.assertFalse(demo.GRANT.exists())
         self.control.assert_not_called()
@@ -229,7 +236,7 @@ class ClosureTests(unittest.TestCase):
         demo.GRANT.touch()
         demo.UNIT.write_text("changed unit")
         self.show.return_value = reply(demo.SERVICE, "active", "running")
-        with self.assertRaisesRegex(RuntimeError, "unit differs.*grant absent.*unsafe to stop"):
+        with self.assertRaisesRegex(RuntimeError, "installed file differs.*grant absent.*unsafe to stop"):
             demo.enable()
         self.assertFalse(demo.GRANT.exists())
         self.assertFalse(demo.read_policy()["enabled"])
@@ -243,7 +250,7 @@ class ClosureTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "risky relationship.*grant absent.*unsafe to stop"):
             demo.reconcile({}, self.present)
         self.assertFalse(demo.GRANT.exists())
-        self.preflight.assert_called_once_with(demo.SERVICE)
+        self.preflight.assert_called_once_with(demo.SERVICE, for_stop=False)
         self.control.assert_not_called()
 
     def test_status_reports_unknown_without_false_inactivity(self):

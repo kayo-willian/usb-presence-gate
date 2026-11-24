@@ -9,3 +9,12 @@ jobs:
         run: make test
       - name: Compile sources
         run: python3 -m compileall -q src bin
+      - name: Verify bundled system units in a temporary root
+        run: |
+          root=$(mktemp -d)
+          make install DESTDIR="$root"
+          mkdir -p "$root/usr/lib/systemd" "$root/usr/bin"
+          cp -a /usr/lib/systemd/system "$root/usr/lib/systemd/"
+          cp /usr/bin/sleep "$root/usr/bin/"
+          systemd-analyze --root="$root" --generators=no --recursive-errors=no verify \
+            presence-demo.service usbgate-reconcile.service usbgate-reconcile.timer

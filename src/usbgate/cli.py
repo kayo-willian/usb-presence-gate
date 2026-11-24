@@ -174,8 +174,6 @@ def has_enrollment():
 def monitor(enable):
     from . import demo
     demo.require_root()
-    if not SOURCE_RULE.is_file():
-        raise RuntimeError("install the tool first with sudo make install")
     with locked(RUNTIME / "admin.lock"):
         with locked(LOCK):
             policy = demo.read_policy()
@@ -184,10 +182,16 @@ def monitor(enable):
                 raise RuntimeError("disable the demo gate before changing USB observation")
             if not enable and has_enrollment():
                 raise RuntimeError("policy drop-ins detected; refusing to disable observation")
-            rule_content = SOURCE_RULE.read_bytes()
-            if enable and (RULE.is_symlink() or (RULE.exists() and RULE.read_bytes() != rule_content)):
-                raise RuntimeError("udev rule differs from project-owned file or is a symlink")
-            if armed and RULE.is_file() and timer_active():
+            if armed:
+                try:
+                    demo.verify_monitor()
+                except RuntimeError as exc:
+                    context = "armed monitor verification failed"
+                    try:
+                        demo.inhibit()
+                    except (OSError, RuntimeError) as marker_error:
+                        context += f"; could not inhibit authorization: {marker_error}"
+                    demo.close_after_error(context, exc)
                 print("Observation enabled.")
                 return
             demo.inhibit()
@@ -197,12 +201,18 @@ def monitor(enable):
                 raise RuntimeError(f"monitor transition inhibited: {exc}; retry after recovery") from exc
         # A worker started or stopped below can take LOCK; it never takes admin.lock.
         try:
+            rule_content = demo.installed_bytes(SOURCE_RULE)
+            if enable and (RULE.exists() or RULE.is_symlink()):
+                demo.verify_rule()
             configure_monitor(enable, rule_content)
             with locked(LOCK):
                 target = "active" if enable else "inactive"
                 if unit_state(TIMER) != target or RULE.exists() != enable:
                     raise RuntimeError("monitor configuration unconfirmed")
-                if not enable:
+                if enable:
+                    demo.verify_monitor()
+                else:
+                    demo.verify_timer(expected_state="disabled")
                     if unit_state(SERVICE) != "inactive":
                         raise RuntimeError("observer shutdown unconfirmed")
                     demo.close_demo()
@@ -216,24 +226,29 @@ def monitor(enable):
 def configure_monitor(enable, rule_content):
     errors = []
     if enable:
+        from . import demo
+        subprocess.run(["/usr/bin/systemctl", "daemon-reload"], capture_output=True, text=True,
+                       check=True, timeout=30)
+        demo.verify_timer(expected_state=None)
         if not RULE.exists():
             fd = os.open(RULE, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
             with os.fdopen(fd, "wb") as stream:
                 stream.write(rule_content)
         actions = [
-            ("/usr/bin/systemctl", "daemon-reload"),
             ("/usr/bin/udevadm", "control", "--reload"),
             ("/usr/bin/systemctl", "enable", "--now", TIMER),
             ("/usr/bin/systemctl", "start", SERVICE),
         ]
     else:
+        from . import demo
+        demo.verify_timer(expected_state=None)
         actions = [
             ("/usr/bin/systemctl", "disable", "--now", TIMER),
         ]
         if RULE.is_symlink():
             errors.append("udev rule symlink left in place")
         elif RULE.exists():
-            if RULE.read_bytes() != rule_content:
+            if demo.trusted_bytes(RULE) != rule_content:
                 errors.append("modified udev rule left in place")
             else:
                 RULE.unlink()
@@ -244,6 +259,8 @@ def configure_monitor(enable, rule_content):
             subprocess.run(args, capture_output=True, text=True, check=True, timeout=30)
         except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
             errors.append(f"{args[0]} {args[1]}: {exc}")
+            if enable:
+                break
     if errors:
         raise RuntimeError("; ".join(errors))
 
@@ -255,6 +272,7 @@ def status(json_mode=False):
     mode = "observe" if RULE.exists() else "inert"
     output = {"mode": "inhibited" if demo["authorization_inhibited"] else mode,
               "timer_active": timer_active(),
+              "monitor_safety": monitor_diagnostic(),
               "enforcement": demo["state"] == "enabled" and not demo["authorization_inhibited"],
               "demo": demo,
               "boot_id_match": state.get("boot_id") == boot_id(),
@@ -267,12 +285,22 @@ def status(json_mode=False):
             print(f"  {key}: {item['state']}")
 
 
+def monitor_diagnostic():
+    from . import demo
+    try:
+        demo.verify_monitor()
+    except RuntimeError as exc:
+        return str(exc)
+    return "verified"
+
+
 def doctor():
     checks = {"python": sys.version.split()[0],
               "systemd_running": Path("/run/systemd/system").exists(),
               "usb_sysfs": SYSFS.is_dir(),
               "package_installed": SOURCE_RULE.is_file(),
               "observer_enabled": RULE.is_file(),
+              "monitor_safety": monitor_diagnostic(),
               "timer_active": timer_active(),
               "state_available": STATE.exists()}
     for key, value in checks.items():

@@ -60,6 +60,10 @@ class ObservationTests(unittest.TestCase):
             with patch.object(cli, "RUNTIME", root), \
                  patch.object(cli, "LOCK", root / "lock"), \
                  patch.object(demo, "INHIBIT", root / "inhibit"), \
+                 patch.object(demo, "verify_timer"), \
+                 patch.object(demo, "installed_bytes", side_effect=lambda path: path.read_bytes()), \
+                 patch.object(demo, "trusted_bytes", side_effect=lambda path: path.read_bytes()), \
+                 patch.object(demo, "RULE", rule), \
                  patch.object(demo, "close_demo"), \
                  patch.object(cli, "RULE", rule), \
                  patch.object(cli, "SOURCE_RULE", source), \
@@ -143,6 +147,10 @@ class AdditionalLifecycleTests(unittest.TestCase):
             with patch.object(cli, "RUNTIME", root), \
                  patch.object(cli, "LOCK", root / "lock"), \
                  patch.object(demo, "INHIBIT", root / "inhibit"), \
+                 patch.object(demo, "verify_timer"), \
+                 patch.object(demo, "installed_bytes", side_effect=lambda path: path.read_bytes()), \
+                 patch.object(demo, "trusted_bytes", side_effect=lambda path: path.read_bytes()), \
+                 patch.object(demo, "RULE", rule), \
                  patch.object(demo, "close_demo"), \
                  patch.object(cli, "SOURCE_RULE", source), \
                  patch.object(demo, "POLICY", root / "policy"), \

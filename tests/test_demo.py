@@ -126,7 +126,7 @@ class DemoReconciliationTests(unittest.TestCase):
                  patch.object(demo, "RULE", rule), \
                  patch.object(demo, "read_policy", return_value=self.policy()), \
                  patch.object(demo, "verify_unit"), \
-                 patch.object(demo, "timer_active", return_value=True), \
+                 patch.object(demo, "verify_monitor"), \
                  patch.object(demo, "systemctl", side_effect=fake_systemctl), \
                  patch.object(demo, "unit_state", side_effect=lambda name: "active" if running[0] else "inactive"):
                 demo.reconcile(self.state("present"), self.observations())
@@ -152,7 +152,7 @@ class DemoReconciliationTests(unittest.TestCase):
                  patch.object(demo, "RULE", rule), \
                  patch.object(demo, "read_policy", return_value=self.policy()), \
                  patch.object(demo, "verify_unit"), \
-                 patch.object(demo, "timer_active", return_value=False), \
+                 patch.object(demo, "verify_monitor", side_effect=RuntimeError("safety monitor unavailable")), \
                  patch.object(demo, "stop_demo") as stopper:
                 with self.assertRaisesRegex(RuntimeError, "safety monitor unavailable"):
                     demo.reconcile(self.state("present"), self.observations())
@@ -173,7 +173,7 @@ class DemoReconciliationTests(unittest.TestCase):
             with patch.object(demo, "RULE", rule), \
                  patch.object(demo, "read_policy", return_value=self.policy()), \
                  patch.object(demo, "verify_unit"), \
-                 patch.object(demo, "timer_active", return_value=True), \
+                 patch.object(demo, "verify_monitor"), \
                  patch.object(demo, "close_demo") as closer:
                 demo.reconcile(self.state("present"), {
                     "a" * 12: {"assurance": "ambiguous", "classes": ["08"]}})
@@ -193,10 +193,12 @@ class DemoReconciliationTests(unittest.TestCase):
         with patch.object(demo, "read_policy", return_value=dict(self.policy(), enabled=False)), \
              patch.object(demo, "verify_unit"), \
              patch.object(demo, "RULE", Path(__file__)), \
-             patch.object(demo, "timer_active", return_value=False), \
+             patch.object(demo, "verify_monitor", side_effect=RuntimeError("safety monitor unavailable")), \
+             patch.object(demo, "close_demo") as close, \
              patch.object(demo, "save_policy") as writer:
-            with self.assertRaises(RuntimeError):
+            with self.assertRaisesRegex(RuntimeError, "safety monitor unavailable"):
                 demo.enable()
+            close.assert_called_once()
             writer.assert_not_called()
 
 
@@ -212,7 +214,7 @@ class DemoStartFailureTests(unittest.TestCase):
             with patch.object(demo, "RULE", rule), \
                  patch.object(demo, "read_policy", return_value=policy), \
                  patch.object(demo, "verify_unit"), \
-                 patch.object(demo, "timer_active", return_value=True), \
+                 patch.object(demo, "verify_monitor"), \
                  patch.object(demo, "unit_state", return_value="inactive"), \
                  patch.object(demo, "open_grant", return_value=True), \
                  patch.object(demo, "systemctl", side_effect=subprocess.CalledProcessError(1, "systemctl start")), \
@@ -235,7 +237,7 @@ class DemoStartFailureTests(unittest.TestCase):
                  patch.object(demo, "RULE", rule), \
                  patch.object(demo, "read_policy", return_value=policy), \
                  patch.object(demo, "verify_unit"), \
-                 patch.object(demo, "timer_active", return_value=True), \
+                 patch.object(demo, "verify_monitor"), \
                  patch.object(demo, "stop_demo") as stopper:
                 demo.reconcile(state, observations)
                 self.assertFalse(grant.exists())
