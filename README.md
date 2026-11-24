@@ -24,6 +24,7 @@ A minimal, standard-library Python **USB presence observer and opt-in disposable
 - [Can I protect my own services?](#can-i-protect-my-own-services)
 - [Troubleshooting](#troubleshooting)
 - [Limitations and future possibilities](#limitations-and-future-possibilities)
+- [Contributing](#contributing)
 - [Evidence, documentation and credits](#evidence-documentation-and-credits)
 
 ## What it does
@@ -355,6 +356,10 @@ When reporting an issue, include the Debian/systemd/Python versions, the command
 - **Test-host scope:** Debian 13/systemd 257 and Python 3.13 on a low-resource physical notebook. Other distributions, architectures and production workloads are outside the validation record.
 
 **Development is paused after this experimental milestone.** Possible future work includes measured fallback latency, deeper failure injection, a safe generic opt-in service adapter and cryptographic token research. None of these are present in this release. See [technical boundary](docs/demo-safety.md) and [future scope](docs/completion-plan.md).
+
+## Contributing
+
+Contributions are welcome through forks and reviewed pull requests. Read the [contribution guide](CONTRIBUTING.md) for development, testing and review expectations, and the [code of conduct](CODE_OF_CONDUCT.md) for project discussions. Use [GitHub Issues](https://github.com/kayo-willian/usb-presence-gate/issues) for ordinary bugs and proposals; follow the [security policy](SECURITY.md) for suspected vulnerabilities. See the [changelog](CHANGELOG.md) for merged changes and validation history.
 
 ## Evidence, documentation and credits
 
