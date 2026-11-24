@@ -106,7 +106,7 @@ class BoundaryTests(unittest.TestCase):
             ("Transient", "yes"), ("RequiredBy", "other.service"), ("BindsTo", "other.service"),
             ("RequisiteOf", "other.service"), ("Wants", "other.service"), ("Requires", "other.service"),
             ("ConflictedBy", "other.service"), ("Conflicts", "other.service"),
-            ("OnSuccess", "other.service"), ("Upholds", "other.service"), ("Job", "45"),
+            ("OnSuccess", "other.service"), ("Upholds", "other.service"), ("Job", "invalid"),
             ("PropagatesStopTo", "other.service"), ("FailureAction", "reboot"),
         ):
             with self.subTest(field=field):
@@ -118,6 +118,43 @@ class BoundaryTests(unittest.TestCase):
                     demo.close_demo()
                 self.assertFalse(demo.GRANT.exists())
                 self.control.assert_not_called()
+
+    def test_pending_start_is_cancelled_only_by_a_verified_stop(self):
+        unit = self.units[demo.SERVICE]
+
+        def stop(verb, name):
+            self.assertFalse(demo.GRANT.exists())
+            self.assertEqual(verb, "stop")
+            self.actuate(verb, name)
+            unit["Job"] = ""
+
+        self.control.side_effect = stop
+        for active, sub, job in (("inactive", "dead", "45"), ("active", "running", "45"),
+                                 ("activating", "start", "45"), ("activating", "start", ""),
+                                 ("deactivating", "stop-sigterm", "45")):
+            with self.subTest(active=active, job=job):
+                demo.GRANT.touch()
+                unit.update(ActiveState=active, SubState=sub, Job=job)
+                with self.assertRaisesRegex(RuntimeError, "start unsafe during transition.*confirmed inactive"):
+                    self.reconcile()
+                self.control.assert_called_once_with("stop", demo.SERVICE)
+                self.control.reset_mock()
+
+    def test_transition_does_not_override_structural_refusal(self):
+        self.units[demo.SERVICE].update(ActiveState="activating", SubState="start", Job="45",
+                                        RequiredBy="other.service")
+        demo.GRANT.touch()
+        self.assert_denied("RequiredBy.*unsafe to stop")
+        with self.assertRaisesRegex(RuntimeError, "unsafe to stop.*RequiredBy"):
+            demo.close_demo()
+        self.control.assert_not_called()
+
+    def test_pending_job_after_stop_is_not_confirmed_inactive(self):
+        self.units[demo.SERVICE].update(ActiveState="activating", SubState="start", Job="45")
+        # Simulate a later job still queued after stop returned and the process exited.
+        with self.assertRaisesRegex(RuntimeError, "inactivity unconfirmed.*transitioning"):
+            demo.close_demo()
+        self.control.assert_called_once_with("stop", demo.SERVICE)
 
     def test_missing_and_duplicate_properties(self):
         del self.units[demo.SERVICE]["OnSuccess"]
@@ -273,6 +310,72 @@ class BoundaryTests(unittest.TestCase):
         self.units[cli.TIMER]["UnitFileState"] = "enabled"
         cli.monitor(True)
         self.assertFalse(demo.inhibited())
+
+    def simulate_monitor_shutdown(self, *, timer_changes=None, leave_link=False, worker_changes=None):
+        demo.save_policy(dict(self.policy, enabled=False))
+
+        def manager(cmd, **kwargs):
+            if tuple(cmd[1:]) == ("disable", "--now", cli.TIMER):
+                timer = self.units[cli.TIMER]
+                timer.update(ActiveState="inactive", SubState="dead", Job="", UnitFileState="disabled", WantedBy="")
+                timer.update(timer_changes or {})
+                if not leave_link:
+                    self.link.unlink(missing_ok=True)
+            elif tuple(cmd[1:]) == ("stop", cli.SERVICE):
+                self.units[cli.SERVICE].update(worker_changes or {})
+            return self.manager(cmd, **kwargs)
+
+        self.run.side_effect = manager
+
+    def test_shutdown_releases_inhibit_only_after_disabled_and_inactive(self):
+        self.simulate_monitor_shutdown()
+        cli.monitor(False)
+        self.assertFalse(self.link.exists())
+        self.assertFalse(demo.inhibited())
+        self.link.parent.rmdir()  # An already disabled installation may have no wants directory.
+        cli.monitor(False)
+        self.assertFalse(demo.inhibited())
+
+    def test_shutdown_inhibits_on_incomplete_manager_disablement(self):
+        for field, value in (("UnitFileState", "enabled"), ("UnitFileState", "enabled-runtime"),
+                             ("UnitFileState", "masked"), ("UnitFileState", ""),
+                             ("WantedBy", "timers.target"), ("Job", "123"),
+                             ("SubState", "waiting"), ("ActiveState", "active")):
+            with self.subTest(field=field, value=value):
+                self.units[cli.TIMER] = properties(cli.TIMER)
+                self.simulate_monitor_shutdown(timer_changes={field: value})
+                with self.assertRaisesRegex(RuntimeError, "authorization inhibited"):
+                    cli.monitor(False)
+                self.assertTrue(demo.inhibited())
+
+    def test_shutdown_rejects_existing_and_dangling_boot_links(self):
+        for target in (self.link.parent.parent / cli.TIMER, self.root / "missing"):
+            self.link.unlink(missing_ok=True)
+            self.link.symlink_to(target)
+            self.simulate_monitor_shutdown(leave_link=True)
+            with self.assertRaisesRegex(RuntimeError, "enablement link still present"):
+                cli.monitor(False)
+            self.assertTrue(demo.inhibited())
+            self.assertTrue(self.link.is_symlink())
+
+    def test_disabled_timer_with_pending_observer_does_not_clear_marker(self):
+        self.simulate_monitor_shutdown(worker_changes={"Job": "72"})
+        with self.assertRaisesRegex(RuntimeError, "observer shutdown unconfirmed"):
+            cli.monitor(False)
+        self.assertTrue(demo.inhibited())
+
+    def test_shutdown_retains_inhibit_when_boot_link_lookup_fails(self):
+        self.simulate_monitor_shutdown()
+        lstat = Path.lstat
+
+        def lookup(path):
+            if path == self.link:
+                raise PermissionError("cannot inspect boot link")
+            return lstat(path)
+
+        with patch.object(Path, "lstat", lookup), self.assertRaisesRegex(RuntimeError, "cannot inspect boot link"):
+            cli.monitor(False)
+        self.assertTrue(demo.inhibited())
 
     def test_armed_monitor_shortcut_closes_on_rule_drift(self):
         self.reconcile()

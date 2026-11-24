@@ -62,9 +62,14 @@ review. The project never repairs permissions or overwrites a modified rule.
 
 The manager must report the single expected name and canonical fragment
 under `/etc/systemd/system/` for each unit, with no drop-ins, transient
-definition or pending daemon reload. For the demo, the preflight also checks
-its simple service type, dynamic user, system slice, manual start/stop
-eligibility, a settled service state and an empty job.
+definition or pending daemon reload. Both starting and stopping the demo
+require the expected simple service type, dynamic user, system slice,
+manual control eligibility and safe relationships. A new start also requires
+`inactive/dead` with an empty `Job`. When a job is pending or the service
+is transitioning, the gate revokes the grant and can request a stop after
+rechecking the unit. With systemd's default job mode, a stop can replace a
+conflicting queued start. Closure still requires a fresh observation of
+`inactive/dead` with no job. [Debian systemctl(1)](https://manpages.debian.org/trixie/systemd/systemctl.1.en.html)
 
 The fixed-unit checks examine direct transaction relationships. They allow
 `Requires=` on the normal system slice and sysinit target, and mount
@@ -83,14 +88,19 @@ job, `UnitFileState=enabled` and the expected worker in both `Unit` and
 must resolve to the verified timer fragment. An elapsed or runtime-enabled
 timer cannot authorize the demo. The oneshot worker may be inactive between
 runs. During initial monitor setup, file and effective configuration checks
-precede activation; operational and persistent-enablement checks follow it.
+precede activation and persistent enablement is verified afterward.
+`monitor disable` clears the administrative inhibit only after confirming
+the timer is `inactive/dead` with an empty job, `UnitFileState=disabled`,
+and no remaining `WantedBy` relationship. The boot link must be absent
+(a dangling symlink still counts as present) and the observer must report
+`inactive/dead` with no job. An inconclusive check leaves the inhibit in place.
 [Debian systemd.timer(5)](https://manpages.debian.org/trixie/systemd/systemd.timer.5.en.html)
 
 `doctor` and `status --json` expose `monitor_safety` as `verified` or a
 diagnostic; use sudo to read the installation manifest. `timer_active`
 continues to describe current activity alone. A monitoring failure blocks
-authorization and triggers verified closure on reconciliation. A rejected
-demo preflight leaves the worker unable to stop an active workload safely.
+authorization and triggers verified closure on reconciliation. A failed
+structural check prevents the worker from stopping an active demo.
 Review the named fragment, relationship, rule, permissions or enablement
 before retrying recovery. A failed monitor transition retains its inhibit.
 

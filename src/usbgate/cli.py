@@ -212,6 +212,7 @@ def monitor(enable):
                 if enable:
                     demo.verify_monitor()
                 else:
+                    demo.verify_timer(expected_state="disabled")
                     if unit_state(SERVICE) != "inactive":
                         raise RuntimeError("observer shutdown unconfirmed")
                     demo.close_demo()
@@ -228,7 +229,7 @@ def configure_monitor(enable, rule_content):
         from . import demo
         subprocess.run(["/usr/bin/systemctl", "daemon-reload"], capture_output=True, text=True,
                        check=True, timeout=30)
-        demo.verify_timer(operational=False)
+        demo.verify_timer(expected_state=None)
         if not RULE.exists():
             fd = os.open(RULE, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
             with os.fdopen(fd, "wb") as stream:
@@ -240,7 +241,7 @@ def configure_monitor(enable, rule_content):
         ]
     else:
         from . import demo
-        demo.verify_timer(operational=False)
+        demo.verify_timer(expected_state=None)
         actions = [
             ("/usr/bin/systemctl", "disable", "--now", TIMER),
         ]

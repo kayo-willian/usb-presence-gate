@@ -14,7 +14,7 @@ import subprocess
 import tempfile
 import time
 
-from .policy import unit_state, verify_monitor_units
+from .policy import DemoTransition, unit_state, verify_monitor_units
 
 POLICY = Path("/etc/usbgate/demo.json")
 GRANT = Path("/run/usbgate/demo-grant")
@@ -83,17 +83,26 @@ def verify_rule():
         raise RuntimeError("deployed udev rule differs from installed reference")
 
 
-def verify_timer(*, operational=True):
+def verify_timer(*, expected_state="enabled"):
     from .cli import SERVICE as worker
     timer_path = SYSTEM_UNITS / TIMER
     installed_bytes(timer_path)
     installed_bytes(SYSTEM_UNITS / worker)
-    verify_monitor_units(operational=operational)
-    if operational:
-        link = SYSTEM_UNITS / "timers.target.wants" / TIMER
+    verify_monitor_units(expected_state=expected_state)
+    link = SYSTEM_UNITS / "timers.target.wants" / TIMER
+    if expected_state == "enabled":
         trusted_parents(link)
         if not link.is_symlink() or link.resolve(strict=True) != timer_path:
             raise RuntimeError("persistent timers.target enablement link missing or incorrect")
+    elif expected_state == "disabled":
+        # systemctl disable may remove an empty .wants directory. lstat also
+        # detects dangling links; any other lookup error makes removal uncertain.
+        try:
+            trusted_parents(link)
+            link.lstat()
+        except FileNotFoundError:
+            return
+        raise RuntimeError("persistent timers.target enablement link still present")
 
 
 def verify_monitor():
@@ -148,12 +157,14 @@ def save_policy(policy):
             os.unlink(temporary)
 
 
-def verify_unit():
+def verify_unit(*, for_stop=False):
     """Check the installed unit is the project-owned, unmodified demo."""
     installed_bytes(UNIT)
     from .policy import inspect_unit
     try:
-        inspect_unit(SERVICE)
+        inspect_unit(SERVICE, for_stop=for_stop)
+    except DemoTransition:
+        raise
     except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
         raise RuntimeError(f"demo systemd unit fails safety preflight: {error}") from error
 
@@ -177,7 +188,7 @@ def stop_demo(*, stop_allowed=True):
     if not stop_allowed:
         raise RuntimeError("; ".join([*errors, f"unsafe to stop; service state: {state}"]))
     try:
-        verify_unit()
+        verify_unit(for_stop=True)
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         raise RuntimeError("; ".join([*errors, f"unsafe to stop: {exc}; service state: {state}"])) from exc
 
@@ -226,6 +237,8 @@ def close_after_error(context, cause, *, stop_allowed=True):
 def verify_before_open():
     try:
         verify_unit()
+    except DemoTransition as exc:
+        close_after_error("demo start unsafe during transition", exc)
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         close_after_error("unit safety verification failed; recovery required", exc, stop_allowed=False)
 

@@ -100,7 +100,7 @@ class ClosureTests(unittest.TestCase):
                 self.assertFalse(demo.GRANT.exists())
                 grant.assert_not_called()
                 self.control.assert_called_once_with("stop", demo.SERVICE)
-                self.preflight.assert_called_once_with(demo.SERVICE)
+                self.preflight.assert_called_once_with(demo.SERVICE, for_stop=True)
                 self.assertEqual(self.show.call_count, 2)
                 self.control.reset_mock()
                 self.preflight.reset_mock()
@@ -162,7 +162,7 @@ class ClosureTests(unittest.TestCase):
                        "bus unavailable", "inactivity unconfirmed", "recovery required"):
             self.assertIn(detail, str(raised.exception))
         self.assertTrue(demo.GRANT.exists())
-        self.preflight.assert_called_once_with(demo.SERVICE)
+        self.preflight.assert_called_once_with(demo.SERVICE, for_stop=True)
         self.control.assert_called_once_with("stop", demo.SERVICE)
 
     def test_disarmed_states_check_the_service_independently_of_the_grant(self):
@@ -183,7 +183,7 @@ class ClosureTests(unittest.TestCase):
                         self.assertEqual(self.show.call_count, len(answers))
                         if active:
                             self.control.assert_called_once_with("stop", demo.SERVICE)
-                            self.preflight.assert_called_once_with(demo.SERVICE)
+                            self.preflight.assert_called_once_with(demo.SERVICE, for_stop=True)
                         else:
                             self.control.assert_not_called()
                         self.control.reset_mock()
@@ -250,7 +250,7 @@ class ClosureTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "risky relationship.*grant absent.*unsafe to stop"):
             demo.reconcile({}, self.present)
         self.assertFalse(demo.GRANT.exists())
-        self.preflight.assert_called_once_with(demo.SERVICE)
+        self.preflight.assert_called_once_with(demo.SERVICE, for_stop=False)
         self.control.assert_not_called()
 
     def test_status_reports_unknown_without_false_inactivity(self):

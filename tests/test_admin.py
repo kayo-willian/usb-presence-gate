@@ -49,8 +49,8 @@ class AdminFixture(unittest.TestCase):
         self.show = self.enterContext(patch.object(demo, "unit_state", side_effect=self.state))
         self.enterContext(patch.object(subprocess, "run", side_effect=self.configure))
 
-    def check_timer(self, *, operational=True):
-        if operational and self.state(cli.TIMER) != "active":
+    def check_timer(self, *, expected_state="enabled"):
+        if expected_state == "enabled" and self.state(cli.TIMER) != "active":
             raise RuntimeError("timer inactive")
 
     def state(self, name):
