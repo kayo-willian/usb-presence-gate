@@ -1,8 +1,9 @@
 # Recovery, diagnostics and removal
 
 This page documents the **project-owned disposable demo**, not system recovery
-for arbitrary Linux services. The procedure was manually tested on the
-physical Debian 13 notebook on 2026-11-22.
+for arbitrary Linux services. The original procedure was manually tested on the
+physical Debian 13 notebook on 2026-11-22. The revised ordering and
+current hardening still require live validation.
 
 The demo is not a cryptographic authentication mechanism. Recovery must never
 require the USB drive or a working Python interpreter. Keep at least one
@@ -33,7 +34,7 @@ The project normally touches no other system services.
 
 ## B. Normal shutdown (Python and CLI are available)
 
-Only if the demo is enrolled and armed:
+If the demo is enrolled (armed or disarmed):
 
 ```sh
 sudo /usr/local/sbin/usbgate demo disable
@@ -80,23 +81,30 @@ and use manual recovery if necessary. A failed stop can leave a process active
 even when future authorization is blocked. Sudden power loss, external root
 changes, and manager failure have no demonstrated recovery deadline.
 
-## C. Manual recovery without Python (tested)
+## C. Manual recovery without Python
 
 The procedure below assumes the original project units and relationships.
-If the worker reports `unsafe to stop`, first inspect the effective demo
-fragment, drop-ins and dependencies. A manual stop of a modified unit can
-propagate to another service. Resolve that discrepancy before using the stop
-step. If grant removal failed, also inspect the grant path: an inactive
+If the worker reports `unsafe to stop`, or any project unit or rule differs
+from its installed configuration, first inspect the effective fragments,
+drop-ins, relationships and rule. A manual stop of a modified unit can
+propagate to another service. Resolve the discrepancy before acting; preserve
+administrator-modified rules and evidence. If grant removal failed, also inspect the grant path: an inactive
 service can still be eligible for a later start.
 
 ```sh
 sudo systemctl disable --now usbgate-reconcile.timer
-sudo systemctl stop usbgate-reconcile.service
 sudo rm -f /etc/udev/rules.d/70-usbgate.rules
 sudo udevadm control --reload
+sudo systemctl stop usbgate-reconcile.service
+```
+
+Remove only the verified project-owned rule. Confirm the worker is inactive
+before proceeding. Preserve any existing administrative inhibit marker.
+
+```sh
 sudo rm -f /run/usbgate/demo-grant
 sudo systemctl stop presence-demo.service
-sudo mv /etc/usbgate/demo.json /etc/usbgate/demo.json.disabled
+sudo mv -n /etc/usbgate/demo.json /etc/usbgate/demo.json.disabled
 sudo systemctl daemon-reload
 ```
 
@@ -114,14 +122,17 @@ the underlying system manager or kernel is unavailable.
 Verify without relying on Python:
 
 ```sh
+sudo systemctl is-enabled usbgate-reconcile.timer
 sudo systemctl is-active presence-demo.service
 sudo systemctl is-active usbgate-reconcile.timer
+sudo systemctl is-active usbgate-reconcile.service
 sudo test ! -e /run/usbgate/demo-grant && echo "Demo grant absent"
 sudo test ! -e /etc/usbgate/demo.json && echo "Active demo policy absent"
 ```
 
-The two systemd commands should report `inactive`; the other two
-checks should report the absence of a grant and live policy.
+The timer should report `disabled`, all three unit activity checks should
+report `inactive`, and the two file checks should report the absence of a
+grant and live policy.
 
 After checking, it is possible to run `sudo make uninstall` from the
 same source checkout. The **backup policy is intentionally preserved**
