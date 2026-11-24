@@ -10,6 +10,7 @@ Significant changes to USB Presence Gate are recorded here. Entries describe mer
 
 ### Changed
 
+- Refresh installation, usage, diagnostics, update, recovery and contribution instructions in the README and align the detailed recovery guide. No runtime behavior changed.
 - Systemd and udev safety verification ([#9](https://github.com/kayo-willian/usb-presence-gate/pull/9), 2026-11-24): check project-owned unit files and effective identities, direct transaction relationships, persistent timer enablement and deployed rule integrity against the installation manifest.
 - Separate start and stop verification so a pending start can be stopped when the unit remains structurally safe; retain administrative inhibition until persistent monitor disablement is confirmed.
 - Add monitor safety diagnostics and static verification of the three bundled systemd units in CI.
