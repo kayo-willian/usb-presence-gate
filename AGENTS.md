@@ -17,8 +17,10 @@ approval, not just documentation changes.
 ## Working rules
 
 - Reply to the maintainer in Brazilian Portuguese, plain and concise.
-  Everything in the repository is English: code, comments, README, docs,
-  tests, commits, PR descriptions and CLI help.
+  Keep code, comments, canonical community documents, internal technical docs,
+  tests, commits, PR descriptions and CLI help in English. Maintain Brazilian
+  Portuguese community-document translations under `pt-BR/`, with reciprocal
+  links and synchronized content.
 - Never commit directly to main, merge, silently rewrite published history
   or activate services without the maintainer's approval. Work in reviewed
   topic branches and PRs. Do not start new feature development unless asked.

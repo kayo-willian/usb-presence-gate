@@ -1,5 +1,7 @@
 # Contributing to USB Presence Gate
 
+[Português (Brasil)](pt-BR/CONTRIBUICAO.md)
+
 Contributions are welcome. You can fork this repository, experiment independently, report a bug, improve documentation or submit a pull request. The project is licensed under [MIT](LICENSE); these guidelines govern contributions to this upstream repository, not what you may do with your own fork under that license.
 
 ## Project scope
@@ -69,7 +71,7 @@ Do not publish real USB serials, fingerprints, hostnames, IP addresses, credenti
 Before submitting a pull request:
 
 - Explain the problem, solution, affected behavior and any tradeoffs.
-- Keep repository text, CLI help, code comments, commits and PR descriptions in English.
+- Keep internal technical documentation, CLI help, code comments, commits and PR descriptions in English. Community-document translations belong in `pt-BR/` and must stay aligned with the English originals.
 - Use readable, focused code and the existing project conventions.
 - Preserve existing regression coverage; add tests that would fail before a bug fix.
 - Report exact validation performed, including failures or checks not run. A passing offline suite does not establish hardware safety.

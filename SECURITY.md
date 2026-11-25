@@ -1,5 +1,7 @@
 # Security Policy
 
+[Português (Brasil)](pt-BR/SEGURANCA.md)
+
 ## Scope and limitations
 
 USB Presence Gate is an experimental USB-presence observer with one opt-in disposable service. It is not cryptographic authentication, USB device authorization or production protection. USB descriptors can be copied, and neither a grant file nor the configured absence grace guarantees termination of a running process.
