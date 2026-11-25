@@ -282,7 +282,7 @@ sudo journalctl -t usbgate -n 60 --no-pager
 | Estado desconhecido do gerenciador | Trate como não confirmado; não presuma que o serviço parou. |
 | Recusa de instalação/desinstalação | Preserve o manifesto e investigue o caminho ou estado indicado. |
 
-Remova identificadores privados e credenciais dos logs que compartilhar. Relate problemas comuns pelas [issues](https://github.com/kayo-willian/usb-presence-gate/issues); suspeitas de vulnerabilidades devem seguir [SECURITY.md](SECURITY.md).
+Remova identificadores privados e credenciais dos logs que compartilhar. Relate problemas comuns pelas [issues](https://github.com/kayo-willian/usb-presence-gate/issues); suspeitas de vulnerabilidades devem seguir [SEGURANCA.md](SEGURANCA.md).
 
 ## Desativação, desinstalação e atualizações
 
@@ -419,7 +419,7 @@ O processo de revisão do projeto original é deliberadamente conservador porque
 
 1. [Faça um fork do repositório](https://github.com/kayo-willian/usb-presence-gate/fork).
 2. Clone seu fork e crie uma branch específica a partir da `main` do projeto original.
-3. Leia [CONTRIBUTING.md](CONTRIBUTING.md) e [AGENTS.md](../AGENTS.md).
+3. Leia [CONTRIBUICAO.md](CONTRIBUICAO.md) e [AGENTS.md](../AGENTS.md).
 4. Execute `make test`, faça sua alteração, adicione testes de regressão relevantes e repita a validação.
 5. Abra um pull request para `main` utilizando o modelo de PR do repositório.
 
@@ -427,9 +427,9 @@ Nenhum dispositivo USB físico ou instalação privilegiada é necessário para 
 
 | Recurso da comunidade | Finalidade |
 | --- | --- |
-| [Guia de contribuição](CONTRIBUTING.md) | Requisitos de desenvolvimento, segurança, testes e revisão |
-| [Código de conduta](CODE_OF_CONDUCT.md) | Expectativas de participação respeitosa |
-| [Política de segurança](SECURITY.md) | Divulgação responsável e opções de comunicação privada |
+| [Guia de contribuição](CONTRIBUICAO.md) | Requisitos de desenvolvimento, segurança, testes e revisão |
+| [Código de conduta](CODIGO_DE_CONDUTA.md) | Expectativas de participação respeitosa |
+| [Política de segurança](SEGURANCA.md) | Divulgação responsável e opções de comunicação privada |
 | [Relatar um bug ou propor uma melhoria](https://github.com/kayo-willian/usb-presence-gate/issues/new/choose) | Modelos de issues |
 | [Pull requests](https://github.com/kayo-willian/usb-presence-gate/pulls) | Alterações propostas e revisões |
 | [Histórico](../CHANGELOG.md) | Alterações significativas integradas e histórico de validação |

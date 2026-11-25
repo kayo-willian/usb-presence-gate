@@ -1,6 +1,6 @@
 # Security Policy
 
-[Português (Brasil)](pt-BR/SECURITY.md)
+[Português (Brasil)](pt-BR/SEGURANCA.md)
 
 ## Scope and limitations
 

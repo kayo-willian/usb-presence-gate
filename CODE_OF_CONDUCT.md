@@ -1,6 +1,6 @@
 # Code of Conduct
 
-[Português (Brasil)](pt-BR/CODE_OF_CONDUCT.md)
+[Português (Brasil)](pt-BR/CODIGO_DE_CONDUTA.md)
 
 USB Presence Gate welcomes contributors of different backgrounds and experience levels. Project discussions should be safe, respectful and focused on the work.
 

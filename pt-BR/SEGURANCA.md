@@ -20,4 +20,4 @@ Inclua o commit afetado, ambiente, limite de segurança esperado, comportamento 
 
 Dê ao mantenedor uma oportunidade razoável de investigar antes de tornar públicos detalhes exploráveis. Não teste sistemas que não sejam seus ou para os quais não tenha autorização. Não há programa de recompensas nem prazo de resposta prometido.
 
-Bugs comuns não sensíveis devem ser relatados nas Issues do GitHub. O [guia de contribuição](CONTRIBUTING.md) explica testes e revisão seguros. Caso uma instalação local apresente comportamento inesperado, utilize o [guia de recuperação](../docs/recovery.md) em vez de enfraquecer verificações de segurança ou controlar serviços essenciais.
+Bugs comuns não sensíveis devem ser relatados nas Issues do GitHub. O [guia de contribuição](CONTRIBUICAO.md) explica testes e revisão seguros. Caso uma instalação local apresente comportamento inesperado, utilize o [guia de recuperação](../docs/recovery.md) em vez de enfraquecer verificações de segurança ou controlar serviços essenciais.

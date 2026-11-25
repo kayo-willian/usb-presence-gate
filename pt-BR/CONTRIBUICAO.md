@@ -66,7 +66,7 @@ Experimentos reais são opcionais. Caso opte por validar em seu próprio host de
 
 Pesquise issues e pull requests existentes antes de abrir outro. Use o modelo de relato de bug ou proposta de funcionalidade. Para bugs, inclua commit, sistema operacional, versões de Python e systemd, passos de reprodução, comportamento esperado e observado e saída sanitizada. Para propostas, explique problema, alternativas, escopo e implicações de segurança.
 
-Não publique números de série USB reais, impressões digitais, nomes de hosts, endereços IP, credenciais ou logs privados. Utilize identificadores fictícios nos testes e exemplos. Relate suspeitas de vulnerabilidades por [SECURITY.md](SECURITY.md), não por um relato público de exploração.
+Não publique números de série USB reais, impressões digitais, nomes de hosts, endereços IP, credenciais ou logs privados. Utilize identificadores fictícios nos testes e exemplos. Relate suspeitas de vulnerabilidades por [SEGURANCA.md](SEGURANCA.md), não por um relato público de exploração.
 
 ## Checklist de revisão
 
@@ -83,4 +83,4 @@ Antes de enviar um pull request:
 
 PRs são revisados antes do merge. O mantenedor pode solicitar alterações ou recusar propostas fora do escopo. Não faça merge em nome do mantenedor nem reescreva histórico compartilhado sem aprovação. Não há garantia de prazos de revisão ou resposta.
 
-Siga o [código de conduta](CODE_OF_CONDUCT.md) nas discussões do projeto. Divergências técnicas respeitosas são bem-vindas.
+Siga o [código de conduta](CODIGO_DE_CONDUTA.md) nas discussões do projeto. Divergências técnicas respeitosas são bem-vindas.
