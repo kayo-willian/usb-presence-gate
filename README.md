@@ -12,7 +12,7 @@ The experimental demonstration was completed and tested on November 22, 2026. Su
 
 > **Not an authentication system or a production security product.** The gate controls only the bundled disposable `presence-demo.service`. USB descriptors can be spoofed. Never use this project to protect SSH, networking, authentication, firewalls, Docker or other essential services.
 
-[Português (Brasil)](README.pt-BR.md) · [Installation](#installation) · [Usage](#usage) · [Recovery](#emergency-recovery-without-python) · [Contributing](#contributing) · [Changelog](CHANGELOG.md)
+[Português (Brasil)](pt-BR/README.md) · [Installation](#installation) · [Usage](#usage) · [Recovery](#emergency-recovery-without-python) · [Contributing](#contributing) · [Changelog](CHANGELOG.md)
 
 ## Contents
 
@@ -423,7 +423,7 @@ The upstream review process is deliberately conservative because the project ope
 4. Run `make test`, make your change, add relevant regression tests and rerun validation.
 5. Open a pull request targeting `main` using the repository's PR template.
 
-No physical USB device or privileged installation is necessary for ordinary development and offline testing. Keep changes focused. The README is available in English and Brazilian Portuguese; internal documentation, commits and PRs remain in English. Discuss architectural changes and new dependencies before implementation. Disclose material AI assistance and report test results honestly.
+No physical USB device or privileged installation is necessary for ordinary development and offline testing. Keep changes focused. The README, contribution guide, code of conduct and security policy are available in English and Brazilian Portuguese in [pt-BR/](pt-BR/README.md); internal technical documentation, commits and PRs remain in English. Discuss architectural changes and new dependencies before implementation. Disclose material AI assistance and report test results honestly.
 
 | Community resource | Purpose |
 | --- | --- |

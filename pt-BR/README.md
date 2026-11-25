@@ -3,7 +3,7 @@
 [![Tests](https://github.com/kayo-willian/usb-presence-gate/actions/workflows/test.yml/badge.svg)](https://github.com/kayo-willian/usb-presence-gate/actions/workflows/test.yml)
 ![Debian 13](https://img.shields.io/badge/Debian-13%20Trixie-A81D33?logo=debian&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
-[![License: MIT](https://img.shields.io/badge/License-MIT-2563EB)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2563EB)](../LICENSE)
 ![Status](https://img.shields.io/badge/Status-experimental-64748B)
 
 Observador leve de presença USB e mecanismo de controle de serviço com ativação explícita para Linux headless, construído com a biblioteca padrão do Python, sysfs, udev e systemd. Desenvolvi este projeto para explorar a interação entre eventos físicos USB, disponibilidade de serviços e recuperação segura em um notebook Debian com recursos limitados.
@@ -12,7 +12,7 @@ A demonstração experimental foi concluída e testada em 22 de novembro de 2026
 
 > **Não é um sistema de autenticação nem um produto de segurança para produção.** O mecanismo controla apenas o serviço descartável `presence-demo.service` fornecido pelo projeto. Descritores USB podem ser falsificados. Nunca utilize este projeto para proteger SSH, rede, autenticação, firewalls, Docker ou outros serviços essenciais.
 
-[English](README.md) · [Instalação](#instalação) · [Uso](#uso) · [Recuperação](#recuperação-de-emergência-sem-python) · [Contribuição](#contribuição) · [Histórico](CHANGELOG.md)
+[English](../README.md) · [Instalação](#instalação) · [Uso](#uso) · [Recuperação](#recuperação-de-emergência-sem-python) · [Contribuição](#contribuição) · [Histórico](../CHANGELOG.md)
 
 ## Índice
 
@@ -80,7 +80,7 @@ Outras distribuições e arquiteturas não fazem parte do registro de validaçã
 
 ## Instalação
 
-Use um host descartável para testes, não um host de serviços de produção. Leia o [guia de recuperação](docs/recovery.md) antes de ativar qualquer componente. As instruções abaixo instalam o código atual de `main`, não uma versão empacotada.
+Use um host descartável para testes, não um host de serviços de produção. Leia o [guia de recuperação](../docs/recovery.md) antes de ativar qualquer componente. As instruções abaixo instalam o código atual de `main`, não uma versão empacotada.
 
 ### 1. Instalar pré-requisitos e baixar
 
@@ -108,7 +108,7 @@ A suíte tinha 116 testes aprovados após o PR #9. O número pode aumentar confo
 systemd-analyze verify packaging/systemd/presence-demo.service packaging/systemd/usbgate-reconcile.service packaging/systemd/usbgate-reconcile.timer
 ```
 
-A verificação estática não é um teste de integração real. Em ambientes sem executáveis instalados ou sem um diretório de runtime do gerenciador gravável, pode ser necessário preparar uma raiz de teste; consulte o [workflow de CI](.github/workflows/test.yml).
+A verificação estática não é um teste de integração real. Em ambientes sem executáveis instalados ou sem um diretório de runtime do gerenciador gravável, pode ser necessário preparar uma raiz de teste; consulte o [workflow de CI](../.github/workflows/test.yml).
 
 ### 3. Instalar os arquivos sem ativação
 
@@ -276,7 +276,7 @@ sudo journalctl -t usbgate -n 60 --no-pager
 | Nenhum USB elegível | Confira a varredura de descritores; não contorne as verificações de número de série ou ambiguidade. |
 | Monitor indisponível | Inspecione `monitor_safety`, habilitação do timer, manifesto instalado e regra; resolva o problema informado. |
 | Diretório não confiável ou arquivo modificado | Revise propriedade, permissões e hashes; não sobrescreva arquivos nem enfraqueça verificações. |
-| Autorização inibida | Siga a [recuperação de operações administrativas interrompidas](docs/recovery.md#interrupted-administrative-commands). |
+| Autorização inibida | Siga a [recuperação de operações administrativas interrompidas](../docs/recovery.md#interrupted-administrative-commands). |
 | Demonstração ativa após remoção | Verifique os tempos de observação e diagnósticos de parada; utilize a recuperação se não for possível confirmar o encerramento. |
 | Unidade insegura para parar | Inspecione a unidade efetiva e suas relações antes de qualquer ação manual. |
 | Estado desconhecido do gerenciador | Trate como não confirmado; não presuma que o serviço parou. |
@@ -334,7 +334,7 @@ sudo make install
 sudo systemctl daemon-reload
 ```
 
-Repita o procedimento explícito de monitoramento e cadastro, se desejar. Consulte o [histórico](CHANGELOG.md) antes de atualizar.
+Repita o procedimento explícito de monitoramento e cadastro, se desejar. Consulte o [histórico](../CHANGELOG.md) antes de atualizar.
 
 ### Dados residuais
 
@@ -342,7 +342,7 @@ A desinstalação não remove backups da política, logs, arquivos voláteis de 
 
 ## Recuperação de emergência sem Python
 
-A recuperação não deve exigir o pendrive cadastrado nem um interpretador Python funcional. O procedimento abaixo se aplica somente às unidades originais pertencentes ao projeto. Leia primeiro o [guia detalhado de recuperação](docs/recovery.md).
+A recuperação não deve exigir o pendrive cadastrado nem um interpretador Python funcional. O procedimento abaixo se aplica somente às unidades originais pertencentes ao projeto. Leia primeiro o [guia detalhado de recuperação](../docs/recovery.md).
 
 **Se alguma unidade ou regra tiver sido modificada, inspecione e resolva essa divergência antes de agir.** Parar uma unidade modificada pode afetar serviços não relacionados. Preserve evidências e não exclua uma regra modificada pelo administrador.
 
@@ -392,7 +392,7 @@ O timer deve estar desabilitado, as três unidades inativas e ambas as verifica�
 - A verificação do systemd examina arquivos instalados e um retrato das relações diretas. Não pode comprovar todos os efeitos transitivos, excluir alterações privilegiadas posteriores nem garantir a entrega de eventos.
 - Se não for possível estabelecer uma desativação segura, o sistema informa a falha em vez de emitir uma parada sem verificação. A recuperação manual pode ser necessária.
 
-Um fork separado pode adaptar o código da demonstração fornecida para outra carga de teste independente, não crítica e executada em primeiro plano, após revisão e nova validação. Isso substitui a única carga de trabalho; não cadastra um serviço existente. Consulte o [guia de extensão](docs/extending.md). Alterações para controlar serviços arbitrários ou realizar autenticação exigem um projeto separado e não devem ser consideradas suportadas.
+Um fork separado pode adaptar o código da demonstração fornecida para outra carga de teste independente, não crítica e executada em primeiro plano, após revisão e nova validação. Isso substitui a única carga de trabalho; não cadastra um serviço existente. Consulte o [guia de extensão](../docs/extending.md). Alterações para controlar serviços arbitrários ou realizar autenticação exigem um projeto separado e não devem ser consideradas suportadas.
 
 ## Status do projeto e validação
 
@@ -407,7 +407,7 @@ Um fork separado pode adaptar o código da demonstração fornecida para outra c
 
 Os testes históricos no notebook abrangeram o ciclo de vida original da demonstração, remoção e reconexão físicas, recusa de inicialização manual, inicialização com pendrive conectado, recuperação de emergência e desinstalação após recuperação. Eles não validam todas as alterações mais recentes.
 
-O código atual informa a versão `0.1.0`. Consulte [CHANGELOG.md](CHANGELOG.md) para o histórico de desenvolvimento; datas de marcos não representam releases com tags. Não há compromisso de cronograma de manutenção ou lançamento.
+O código atual informa a versão `0.1.0`. Consulte [CHANGELOG.md](../CHANGELOG.md) para o histórico de desenvolvimento; datas de marcos não representam releases com tags. Não há compromisso de cronograma de manutenção ou lançamento.
 
 ## Contribuição
 
@@ -419,11 +419,11 @@ O processo de revisão do projeto original é deliberadamente conservador porque
 
 1. [Faça um fork do repositório](https://github.com/kayo-willian/usb-presence-gate/fork).
 2. Clone seu fork e crie uma branch específica a partir da `main` do projeto original.
-3. Leia [CONTRIBUTING.md](CONTRIBUTING.md) e [AGENTS.md](AGENTS.md).
+3. Leia [CONTRIBUTING.md](CONTRIBUTING.md) e [AGENTS.md](../AGENTS.md).
 4. Execute `make test`, faça sua alteração, adicione testes de regressão relevantes e repita a validação.
 5. Abra um pull request para `main` utilizando o modelo de PR do repositório.
 
-Nenhum dispositivo USB físico ou instalação privilegiada é necessário para desenvolvimento comum e testes offline. Mantenha as alterações focadas. O README está disponível em inglês e português brasileiro; a documentação interna, os commits e os PRs permanecem em inglês. Discuta mudanças de arquitetura e novas dependências antes da implementação. Declare assistência relevante de IA e relate os resultados dos testes com transparência.
+Nenhum dispositivo USB físico ou instalação privilegiada é necessário para desenvolvimento comum e testes offline. Mantenha as alterações focadas. O README, o guia de contribuição, o código de conduta e a política de segurança estão disponíveis em inglês e português brasileiro. A documentação técnica interna, os commits e os PRs permanecem em inglês. Discuta mudanças de arquitetura e novas dependências antes da implementação. Declare assistência relevante de IA e relate os resultados dos testes com transparência.
 
 | Recurso da comunidade | Finalidade |
 | --- | --- |
@@ -432,20 +432,20 @@ Nenhum dispositivo USB físico ou instalação privilegiada é necessário para 
 | [Política de segurança](SECURITY.md) | Divulgação responsável e opções de comunicação privada |
 | [Relatar um bug ou propor uma melhoria](https://github.com/kayo-willian/usb-presence-gate/issues/new/choose) | Modelos de issues |
 | [Pull requests](https://github.com/kayo-willian/usb-presence-gate/pulls) | Alterações propostas e revisões |
-| [Histórico](CHANGELOG.md) | Alterações significativas integradas e histórico de validação |
+| [Histórico](../CHANGELOG.md) | Alterações significativas integradas e histórico de validação |
 
 ## Documentação
 
 | Documento | Descrição |
 | --- | --- |
-| [Segurança da demonstração](docs/demo-safety.md) | Verificação efetiva das unidades, transições administrativas e evidências em hardware |
-| [Validação em hardware](docs/hardware-validation-2026-11-22.md) | Testes originais do observador |
-| [Recuperação](docs/recovery.md) | Diagnóstico, recuperação de interrupções e remoção |
-| [Guia de extensão](docs/extending.md) | Experimentação segura no código dentro dos limites da demonstração |
-| [Modelo de ameaças](docs/threat-model.md) | Riscos, premissas e exclusões |
-| [Conclusão e escopo futuro](docs/completion-plan.md) | Marco original e possíveis extensões |
-| [Revisão histórica do design](docs/phase0-review.md) | Propostas anteriores, não instruções operacionais atuais |
-| [Trabalhos anteriores](docs/prior-art.md) | Inspiração e implementação independente |
+| [Segurança da demonstração](../docs/demo-safety.md) | Verificação efetiva das unidades, transições administrativas e evidências em hardware |
+| [Validação em hardware](../docs/hardware-validation-2026-11-22.md) | Testes originais do observador |
+| [Recuperação](../docs/recovery.md) | Diagnóstico, recuperação de interrupções e remoção |
+| [Guia de extensão](../docs/extending.md) | Experimentação segura no código dentro dos limites da demonstração |
+| [Modelo de ameaças](../docs/threat-model.md) | Riscos, premissas e exclusões |
+| [Conclusão e escopo futuro](../docs/completion-plan.md) | Marco original e possíveis extensões |
+| [Revisão histórica do design](../docs/phase0-review.md) | Propostas anteriores, não instruções operacionais atuais |
+| [Trabalhos anteriores](../docs/prior-art.md) | Inspiração e implementação independente |
 
 ## Créditos e licença
 
@@ -453,4 +453,4 @@ A ideia, os requisitos e o trabalho em laboratório físico partiram do mantened
 
 Inspirado em **Henrique ([@rique-decoder](https://github.com/rique-decoder))** e seu projeto educacional [Linux USB Security Token](https://github.com/rique-decoder/linux-usb-security-token). Esta é uma implementação independente e não inclui código-fonte do projeto original. [USBGuard](https://github.com/USBGuard/usbguard) é um projeto separado para autorização de dispositivos USB.
 
-Distribuído sob a [licença MIT](LICENSE).
+Distribuído sob a [licença MIT](../LICENSE).
