@@ -446,6 +446,9 @@ No physical USB device or privileged installation is necessary for ordinary deve
 | [Completion and future scope](docs/completion-plan.md) | Original milestone and possible extensions |
 | [Historical design review](docs/phase0-review.md) | Earlier proposals, not current operating instructions |
 | [Prior art](docs/prior-art.md) | Inspiration and independent implementation |
+| [Hypotheses](docs/hypotheses.md) | Notebook checks and evidence |
+| [Historical lifecycle](docs/lifecycle.md) | Earlier proposal, not fully implemented |
+| [Spike procedures](docs/spike-procedures.md) | Historical test plans, not current instructions |
 
 ## Credits and license
 

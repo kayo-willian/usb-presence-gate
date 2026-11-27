@@ -92,3 +92,5 @@ No file or secret on the USB stick is required. Files on ordinary flash
 media can be copied; simply adding a key file would not provide genuine
 hardware-backed authentication. Such a feature would require a separate
 threat model and protocol, and is not part of the current scope.
+
+[Português (Brasil)](../pt-BR/docs/extending.md) · [Project overview](../README.md)

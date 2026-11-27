@@ -57,3 +57,5 @@ Refer to [the complete README](../README.md), [the demo safety record](demo-safe
 
 Never use the demonstration to block SSH, authentication, networking,
 firewall, Docker engine or other critical infrastructure.
+
+[Português (Brasil)](../pt-BR/docs/completion-plan.md) · [Project overview](../README.md)

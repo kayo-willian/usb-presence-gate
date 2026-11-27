@@ -4,3 +4,5 @@
 - USBGuard enforces device authorization. Upstream states GPL version 2 or later. This project observes USB presence and can optionally gate one bundled disposable service. It does not authorize or block USB devices. [USBGuard licensing](https://github.com/USBGuard/usbguard#license)
 
 These references describe related approaches. This review incorporates no upstream code. Check the specific upstream revision, file license and attribution obligations before considering any reuse.
+
+[Português (Brasil)](../pt-BR/docs/prior-art.md) · [Project overview](../README.md)

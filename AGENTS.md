@@ -19,7 +19,7 @@ approval, not just documentation changes.
 - Reply to the maintainer in Brazilian Portuguese, plain and concise.
   Keep code, comments, canonical community documents, internal technical docs,
   tests, commits, PR descriptions and CLI help in English. Maintain Brazilian
-  Portuguese community-document translations under `pt-BR/`, with reciprocal
+  Portuguese technical and community-document translations under `pt-BR/`, with reciprocal
   links and synchronized content.
 - Never commit directly to main, merge, silently rewrite published history
   or activate services without the maintainer's approval. Work in reviewed

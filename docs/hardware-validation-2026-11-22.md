@@ -36,3 +36,5 @@ This is a concise evidence record of commands executed by the maintainer on the 
 - The follow-up hardening patch has separately passed GitHub Actions unit tests and source compilation. Its changed installation behavior has not yet been retested on physical hardware.
 
 This document records a single completed session, not a blanket certification for future revisions.
+
+[Português (Brasil)](../pt-BR/docs/hardware-validation-2026-11-22.md) · [Project overview](../README.md)

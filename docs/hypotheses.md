@@ -23,3 +23,5 @@ CLOCK_BOOTTIME 44825.708116314
 ```
 
 G1 and experiments S3/S4 are retired. The earlier ledger is available in Git history.
+
+[Português (Brasil)](../pt-BR/docs/hypotheses.md) · [Project overview](../README.md)

@@ -1,6 +1,6 @@
 # Contributing to USB Presence Gate
 
-[Português (Brasil)](pt-BR/CONTRIBUICAO.md)
+[Português (Brasil)](pt-BR/CONTRIBUICAO.md) · [Project overview](README.md)
 
 Contributions are welcome. You can fork this repository, experiment independently, report a bug, improve documentation or submit a pull request. The project is licensed under [MIT](LICENSE); these guidelines govern contributions to this upstream repository, not what you may do with your own fork under that license.
 

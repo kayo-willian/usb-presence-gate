@@ -39,3 +39,5 @@ Significant changes to USB Presence Gate are recorded here. Entries describe mer
 - Historical notebook trials covered the normal demo lifecycle, removal/reconnection, manual-start refusal without a grant, reboot with the stick connected, emergency recovery and manifest-based uninstall after recovery. See [hardware evidence](docs/demo-safety.md) for the exact scope.
 
 [Unreleased]: https://github.com/kayo-willian/usb-presence-gate/commits/main/
+
+[Português (Brasil)](pt-BR/CHANGELOG.md) · [Project overview](README.md)

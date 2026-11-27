@@ -26,3 +26,5 @@ These choices are planned and `untested` on the notebook.
 **Recovery.** Keep two SSH sessions and the local console available for future human trials. Manual recovery must work without Python, the USB device or a readable snapshot. The recovery design uses marked drop-ins to inventory enrollment. Quiesce gate openers, detach verified drop-ins, reload and verify relationships, disarm gates and monitoring, then verify S0. With a failed manager, record which steps are incomplete. Reload udev after removing the owned rule. Preserve configuration, registry and snapshots. Repeat recovery from each interrupted boundary. The dead-man switch has been removed.
 
 **Uninstall.** Require S0 or explicit recovery. Remove only confined, manifest-owned paths, leave operator data by default and keep purge a separate explicit destructive choice. Compare only the managed tree with its baseline and list retained data. All transitions, including local rescue and boot behavior, are untested.
+
+[Português (Brasil)](../pt-BR/docs/lifecycle.md) · [Project overview](../README.md)

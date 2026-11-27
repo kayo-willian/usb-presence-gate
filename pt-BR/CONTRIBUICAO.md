@@ -8,7 +8,7 @@ Contribuições são bem-vindas. Você pode fazer um fork deste repositório, ex
 
 ## Escopo do projeto
 
-USB Presence Gate é um observador experimental de descritores USB e um mecanismo de controle com ativação explícita para um serviço descartável no Debian 13 headless. Não é autenticação, produto de segurança nem gerenciador de serviços de uso geral. Leia o [README](README.md), os [limites de segurança](../docs/demo-safety.md), o [guia de recuperação](../docs/recovery.md) e as [instruções do mantenedor](../AGENTS.md) antes de alterar o comportamento.
+USB Presence Gate é um observador experimental de descritores USB e um mecanismo de controle com ativação explícita para um serviço descartável no Debian 13 headless. Não é autenticação, produto de segurança nem gerenciador de serviços de uso geral. Leia o [README](README.md), os [limites de segurança](docs/demo-safety.md), o [guia de recuperação](docs/recovery.md) e as [instruções do mantenedor](../AGENTS.md) antes de alterar o comportamento.
 
 Contribuições úteis incluem relatos de bugs reproduzíveis, testes de regressão, precisão da observação USB, uso limitado de recursos, tratamento seguro de falhas, documentação e observações em hardware verificadas de forma independente. Discuta mudanças arquiteturais, novas dependências ou ampliação do controle de serviços em uma issue antes da implementação. Uma funcionalidade proposta não representa compromisso de integração.
 
@@ -77,7 +77,7 @@ Antes de enviar um pull request:
 - Use código legível, focado e de acordo com as convenções existentes.
 - Preserve a cobertura de regressão existente; adicione testes que falhariam antes da correção de um bug.
 - Relate exatamente a validação realizada, inclusive falhas e verificações não executadas. Uma suíte offline aprovada não comprova segurança em hardware.
-- Atualize a documentação afetada e a seção Unreleased do [CHANGELOG.md](../CHANGELOG.md) para alterações visíveis ao usuário ou significativas para segurança.
+- Atualize a documentação afetada e a seção Unreleased do [CHANGELOG.md](CHANGELOG.md) para alterações visíveis ao usuário ou significativas para segurança.
 - Declare assistência relevante de IA no PR, incluindo quais partes ela ajudou a produzir. Verifique as alterações propostas; não invente autoria, resultados de testes ou atribuição ao projeto original.
 - Envie somente trabalhos que tenha direito de contribuir sob a licença MIT. Preserve avisos de direitos autorais e identifique materiais externos e suas licenças.
 

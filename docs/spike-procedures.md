@@ -32,3 +32,5 @@ For every case paste the date, exact command, redacted raw output, kernel, syste
 4. Rehearse manual recovery without the CLI or USB device. Verify effective detachment before stopping gates, confirm the original member state, remove only fixture-owned artifacts and repeat recovery. Compare the baseline and verify both SSH sessions, network and local console.
 
 **Historical G1 decision record (retired).** Attach S1–S4 evidence and H3–H8 observations, note skipped cases, identify the trigger and gate variant chosen by the human, and record unresolved exposure with its consequence. A failing safety case requires revision and another observation. Phases 2 and 3 need a written human decision.
+
+[Português (Brasil)](../pt-BR/docs/spike-procedures.md) · [Project overview](../README.md)

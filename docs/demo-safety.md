@@ -209,3 +209,5 @@ The backup created by manual recovery is deliberately retained until
 the administrator separately inspects and deletes it. The documented
 physical source-based uninstall did not claim to purge that backup.
 Physical acceptance evidence is not a security certification.
+
+[Português (Brasil)](../pt-BR/docs/demo-safety.md) · [Project overview](../README.md)
