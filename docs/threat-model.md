@@ -10,4 +10,4 @@
 
 **Evidence as of 2026-11-22.** The physical Debian 13 notebook verified the disposable demo's USB removal/stop, reconnection/start, a denied ordinary manual start, post-reboot recovery and Python-independent emergency closure. The exact end-to-end stop bound, timer-only fallback, hostile cloning, corrupt policy on hardware and manager/kernel failures remain unverified. Some paragraphs above describe a **proposed generic gate**, which is not implemented. Refer to [the actual demo boundary](demo-safety.md) and [README](../README.md). Audit state changes and treat descriptor fingerprints as linkable data, never cryptographic proof.
 
-[Português (Brasil)](../pt-BR/docs/threat-model.md) · [Project overview](../README.md)
+[Português (Brasil)](../pt-BR/docs/modelo-de-ameacas.md) · [Project overview](../README.md)

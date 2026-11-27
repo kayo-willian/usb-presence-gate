@@ -71,7 +71,7 @@ Do not publish real USB serials, fingerprints, hostnames, IP addresses, credenti
 Before submitting a pull request:
 
 - Explain the problem, solution, affected behavior and any tradeoffs.
-- Keep internal technical documentation, CLI help, code comments, commits and PR descriptions in English. Community-document translations belong in `pt-BR/` and must stay aligned with the English originals.
+- Keep canonical technical documentation, CLI help, code comments, commits and PR descriptions in English. Technical and community-document translations belong in `pt-BR/` and must stay aligned with the English originals.
 - Use readable, focused code and the existing project conventions.
 - Preserve existing regression coverage; add tests that would fail before a bug fix.
 - Report exact validation performed, including failures or checks not run. A passing offline suite does not establish hardware safety.

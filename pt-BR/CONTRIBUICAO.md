@@ -8,7 +8,7 @@ Contribuições são bem-vindas. Você pode fazer um fork deste repositório, ex
 
 ## Escopo do projeto
 
-USB Presence Gate é um observador experimental de descritores USB e um mecanismo de controle com ativação explícita para um serviço descartável no Debian 13 headless. Não é autenticação, produto de segurança nem gerenciador de serviços de uso geral. Leia o [README](README.md), os [limites de segurança](docs/demo-safety.md), o [guia de recuperação](docs/recovery.md) e as [instruções do mantenedor](../AGENTS.md) antes de alterar o comportamento.
+USB Presence Gate é um observador experimental de descritores USB e um mecanismo de controle com ativação explícita para um serviço descartável no Debian 13 headless. Não é autenticação, produto de segurança nem gerenciador de serviços de uso geral. Leia o [README](README.md), os [limites de segurança](docs/seguranca-da-demonstracao.md), o [guia de recuperação](docs/recuperacao.md) e as [instruções do mantenedor](../AGENTS.md) antes de alterar o comportamento.
 
 Contribuições úteis incluem relatos de bugs reproduzíveis, testes de regressão, precisão da observação USB, uso limitado de recursos, tratamento seguro de falhas, documentação e observações em hardware verificadas de forma independente. Discuta mudanças arquiteturais, novas dependências ou ampliação do controle de serviços em uma issue antes da implementação. Uma funcionalidade proposta não representa compromisso de integração.
 
@@ -73,7 +73,7 @@ Não publique números de série USB reais, impressões digitais, nomes de hosts
 Antes de enviar um pull request:
 
 - Explique o problema, a solução, o comportamento afetado e as concessões envolvidas.
-- Mantenha documentação técnica interna, ajuda da CLI, comentários do código, commits e descrições de PR em inglês. Traduções dos documentos comunitários ficam em `pt-BR/` e devem acompanhar os originais.
+- Mantenha a documentação técnica de referência, a ajuda da CLI, os comentários do código, os commits e as descrições de PR em inglês. Traduções dos documentos técnicos e comunitários ficam em `pt-BR/` e devem acompanhar os originais.
 - Use código legível, focado e de acordo com as convenções existentes.
 - Preserve a cobertura de regressão existente; adicione testes que falhariam antes da correção de um bug.
 - Relate exatamente a validação realizada, inclusive falhas e verificações não executadas. Uma suíte offline aprovada não comprova segurança em hardware.

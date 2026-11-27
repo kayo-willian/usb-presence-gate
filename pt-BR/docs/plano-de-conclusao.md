@@ -32,7 +32,7 @@ Essas são **observações de laboratório** reproduzíveis, não certificação
 
 Futuros mantenedores poderiam investigar controle genérico de serviços não críticos, verificações de integração mais rigorosas, medição do tempo de contingência, mais injeção de falhas ou desafio/resposta com suporte de hardware. Cada possibilidade exigiria nova revisão arquitetural, branch de funcionalidade, testes independentes, validação em hardware real e plano de recuperação. Nenhuma nova funcionalidade está programada.
 
-Consulte o [README completo](../README.md), o [registro de segurança da demonstração](demo-safety.md), a [recuperação](recovery.md) e o [guia de extensão](extending.md).
+Consulte o [README completo](../README.md), o [registro de segurança da demonstração](seguranca-da-demonstracao.md), a [recuperação](recuperacao.md) e o [guia de extensão](extensao.md).
 
 Nunca use a demonstração para bloquear SSH, autenticação, rede, firewall, Docker Engine ou outra infraestrutura crítica.
 

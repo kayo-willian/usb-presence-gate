@@ -1,4 +1,4 @@
-> **Proposta histórica de design, não o ciclo de vida da demonstração implementada.** Este documento descreve uma arquitetura genérica anterior (incluindo BindsTo/After e ideias de múltiplas políticas) que não foi implementada no marco experimental concluído. Para comandos reais e comportamento suportado, consulte o [README](../README.md), a [segurança da demonstração](demo-safety.md) e a [recuperação](recovery.md).
+> **Proposta histórica de design, não o ciclo de vida da demonstração implementada.** Este documento descreve uma arquitetura genérica anterior (incluindo BindsTo/After e ideias de múltiplas políticas) que não foi implementada no marco experimental concluído. Para comandos reais e comportamento suportado, consulte o [README](../README.md), a [segurança da demonstração](seguranca-da-demonstracao.md) e a [recuperação](recuperacao.md).
 
 # Esboço do ciclo de vida
 

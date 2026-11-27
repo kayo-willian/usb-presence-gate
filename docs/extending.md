@@ -93,4 +93,4 @@ media can be copied; simply adding a key file would not provide genuine
 hardware-backed authentication. Such a feature would require a separate
 threat model and protocol, and is not part of the current scope.
 
-[Português (Brasil)](../pt-BR/docs/extending.md) · [Project overview](../README.md)
+[Português (Brasil)](../pt-BR/docs/extensao.md) · [Project overview](../README.md)

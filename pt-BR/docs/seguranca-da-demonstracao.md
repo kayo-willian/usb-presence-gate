@@ -13,7 +13,7 @@ O resultado do encerramento considera tanto o arquivo de autorização quanto o 
 - O worker consulta o serviço real mesmo com política ausente ou desabilitada e sem autorização. Se for necessário parar, verifica o arquivo instalado contra o manifesto e as propriedades efetivas do systemd antes de solicitar a parada. Uma verificação de segurança malsucedida bloqueia a solicitação de parada e exige revisão do operador. Após solicitá-la, o worker consulta novamente o gerenciador, inclusive quando a solicitação excedeu o tempo limite. Uma parada confirmada exige que a unidade canônica carregada informe `inactive/dead` com propriedade `Job` vazia.
 
 `demo status` informa `service_state` como `active`, `inactive`, `transitioning`, `failed` ou `unknown`. O campo de compatibilidade `service_active` é JSON `null` para os três últimos. Um resultado desconhecido inclui diagnóstico.
-Essas observações descrevem o instante da consulta ao gerenciador. Jobs posteriores, um worker travado ou um gerenciador inacessível ainda podem exigir [recuperação manual](recovery.md).
+Essas observações descrevem o instante da consulta ao gerenciador. Jobs posteriores, um worker travado ou um gerenciador inacessível ainda podem exigir [recuperação manual](recuperacao.md).
 
 Testes de regressão offline usam arquivos temporários e respostas simuladas do systemd, incluindo comunicação interrompida e falhas simultâneas de persistência, revogação e parada. As observações físicas abaixo são anteriores a essas mudanças.
 Os caminhos de falha atualizados e a temporização no notebook Debian aguardam validação em hardware.
@@ -44,7 +44,7 @@ A ativação inicial registra a observação USB e verifica a unidade fixa e o g
 
 Uma vez armada, a demonstração acompanha o estado USB observado. Uma amostra nova e elegível e um serviço confirmado inativo causam partida mesmo se a autorização já existir. Isso recupera partidas interrompidas do worker e também reverte uma parada manual do serviço enquanto o USB permanece elegível. Use `demo disable` para mantê-lo parado. Estados com falha, em transição e desconhecidos não podem autorizar partida.
 
-A desativação registra o marcador de inibição e grava a política desabilitada antes do encerramento. Uma operação incompleta pode, portanto, deixar política desabilitada com processo ainda em execução. O status expõe `authorization_inhibited` independentemente da política e do estado do serviço. Consulte [recuperação administrativa](recovery.md#operações-administrativas-interrompidas).
+A desativação registra o marcador de inibição e grava a política desabilitada antes do encerramento. Uma operação incompleta pode, portanto, deixar política desabilitada com processo ainda em execução. O status expõe `authorization_inhibited` independentemente da política e do estado do serviço. Consulte [recuperação administrativa](recuperacao.md#operações-administrativas-interrompidas).
 
 Os testes de concorrência usam processos Linux separados, bloqueios reais de arquivos e barreiras de sincronização. Respostas de serviço e observações USB são simuladas. A temporização real do gerenciador Debian e a reinicialização durante uma transição aguardam validação.
 

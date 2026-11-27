@@ -35,16 +35,16 @@ O observador lê descritores USB pelo sysfs do Linux. Deriva uma impressão digi
 
 ```mermaid
 flowchart TD
-    USB["USB descriptors"] --> SYSFS["Linux sysfs"]
-    UDEV["udev add/remove"] --> WORKER["Oneshot reconciliation worker"]
-    TIMER["systemd fallback timer"] --> WORKER
+    USB["Descritores USB"] --> SYSFS["sysfs do Linux"]
+    UDEV["udev: conexão/remoção"] --> WORKER["Worker de reconciliação oneshot"]
+    TIMER["Timer de contingência do systemd"] --> WORKER
     SYSFS --> WORKER
-    WORKER --> STATE["Observation cache"]
-    STATE --> CHECK["Policy, identity and safety checks"]
-    POLICY["Opt-in demo policy"] --> CHECK
-    INHIBIT["Administrative inhibition"] --> CHECK
-    CHECK --> GRANT["Create or revoke temporary grant"]
-    GRANT --> DEMO["presence-demo.service: verified start or stop"]
+    WORKER --> STATE["Cache de observação"]
+    STATE --> CHECK["Verificações de política, identidade e segurança"]
+    POLICY["Política de demonstração opt-in"] --> CHECK
+    INHIBIT["Inibição administrativa"] --> CHECK
+    CHECK --> GRANT["Criar ou revogar autorização temporária"]
+    GRANT --> DEMO["presence-demo.service: início ou parada verificados"]
 ```
 
 | Componente | Finalidade |
@@ -80,7 +80,7 @@ Outras distribuições e arquiteturas não fazem parte do registro de validaçã
 
 ## Instalação
 
-Use um host descartável para testes, não um host de serviços de produção. Leia o [guia de recuperação](docs/recovery.md) antes de ativar qualquer componente. As instruções abaixo instalam o código atual de `main`, não uma versão empacotada.
+Use um host descartável para testes, não um host de serviços de produção. Leia o [guia de recuperação](docs/recuperacao.md) antes de ativar qualquer componente. As instruções abaixo instalam o código atual de `main`, não uma versão empacotada.
 
 ### 1. Instalar pré-requisitos e baixar
 
@@ -276,7 +276,7 @@ sudo journalctl -t usbgate -n 60 --no-pager
 | Nenhum USB elegível | Confira a varredura de descritores; não contorne as verificações de número de série ou ambiguidade. |
 | Monitor indisponível | Inspecione `monitor_safety`, habilitação do timer, manifesto instalado e regra; resolva o problema informado. |
 | Diretório não confiável ou arquivo modificado | Revise propriedade, permissões e hashes; não sobrescreva arquivos nem enfraqueça verificações. |
-| Autorização inibida | Siga a [recuperação de operações administrativas interrompidas](docs/recovery.md#operações-administrativas-interrompidas). |
+| Autorização inibida | Siga a [recuperação de operações administrativas interrompidas](docs/recuperacao.md#operações-administrativas-interrompidas). |
 | Demonstração ativa após remoção | Verifique os tempos de observação e diagnósticos de parada; utilize a recuperação se não for possível confirmar o encerramento. |
 | Unidade insegura para parar | Inspecione a unidade efetiva e suas relações antes de qualquer ação manual. |
 | Estado desconhecido do gerenciador | Trate como não confirmado; não presuma que o serviço parou. |
@@ -342,7 +342,7 @@ A desinstalação não remove backups da política, logs, arquivos voláteis de 
 
 ## Recuperação de emergência sem Python
 
-A recuperação não deve exigir o pendrive cadastrado nem um interpretador Python funcional. O procedimento abaixo se aplica somente às unidades originais pertencentes ao projeto. Leia primeiro o [guia detalhado de recuperação](docs/recovery.md).
+A recuperação não deve exigir o pendrive cadastrado nem um interpretador Python funcional. O procedimento abaixo se aplica somente às unidades originais pertencentes ao projeto. Leia primeiro o [guia detalhado de recuperação](docs/recuperacao.md).
 
 **Se alguma unidade ou regra tiver sido modificada, inspecione e resolva essa divergência antes de agir.** Parar uma unidade modificada pode afetar serviços não relacionados. Preserve evidências e não exclua uma regra modificada pelo administrador.
 
@@ -392,7 +392,7 @@ O timer deve estar desabilitado, as três unidades inativas e ambas as verifica�
 - A verificação do systemd examina arquivos instalados e um retrato das relações diretas. Não pode comprovar todos os efeitos transitivos, excluir alterações privilegiadas posteriores nem garantir a entrega de eventos.
 - Se não for possível estabelecer uma desativação segura, o sistema informa a falha em vez de emitir uma parada sem verificação. A recuperação manual pode ser necessária.
 
-Um fork separado pode adaptar o código da demonstração fornecida para outra carga de teste independente, não crítica e executada em primeiro plano, após revisão e nova validação. Isso substitui a única carga de trabalho; não cadastra um serviço existente. Consulte o [guia de extensão](docs/extending.md). Alterações para controlar serviços arbitrários ou realizar autenticação exigem um projeto separado e não devem ser consideradas suportadas.
+Um fork separado pode adaptar o código da demonstração fornecida para outra carga de teste independente, não crítica e executada em primeiro plano, após revisão e nova validação. Isso substitui a única carga de trabalho; não cadastra um serviço existente. Consulte o [guia de extensão](docs/extensao.md). Alterações para controlar serviços arbitrários ou realizar autenticação exigem um projeto separado e não devem ser consideradas suportadas.
 
 ## Status do projeto e validação
 
@@ -423,7 +423,7 @@ O processo de revisão do projeto original é deliberadamente conservador porque
 4. Execute `make test`, faça sua alteração, adicione testes de regressão relevantes e repita a validação.
 5. Abra um pull request para `main` utilizando o modelo de PR do repositório.
 
-Nenhum dispositivo USB físico ou instalação privilegiada é necessário para desenvolvimento comum e testes offline. Mantenha as alterações focadas. O README, o guia de contribuição, o código de conduta e a política de segurança estão disponíveis em inglês e português brasileiro. A documentação técnica interna, os commits e os PRs permanecem em inglês. Discuta mudanças de arquitetura e novas dependências antes da implementação. Declare assistência relevante de IA e relate os resultados dos testes com transparência.
+Nenhum dispositivo USB físico ou instalação privilegiada é necessário para desenvolvimento comum e testes offline. Mantenha as alterações focadas. O README, o guia de contribuição, o código de conduta e a política de segurança estão disponíveis em inglês e português brasileiro. A documentação técnica também está disponível nos dois idiomas, com a versão em inglês como referência; os commits e PRs permanecem em inglês. Discuta mudanças de arquitetura e novas dependências antes da implementação. Declare assistência relevante de IA e relate os resultados dos testes com transparência.
 
 | Recurso da comunidade | Finalidade |
 | --- | --- |
@@ -438,17 +438,17 @@ Nenhum dispositivo USB físico ou instalação privilegiada é necessário para 
 
 | Documento | Descrição |
 | --- | --- |
-| [Segurança da demonstração](docs/demo-safety.md) | Verificação efetiva das unidades, transições administrativas e evidências em hardware |
-| [Validação em hardware](docs/hardware-validation-2026-11-22.md) | Testes originais do observador |
-| [Recuperação](docs/recovery.md) | Diagnóstico, recuperação de interrupções e remoção |
-| [Guia de extensão](docs/extending.md) | Experimentação segura no código dentro dos limites da demonstração |
-| [Modelo de ameaças](docs/threat-model.md) | Riscos, premissas e exclusões |
-| [Conclusão e escopo futuro](docs/completion-plan.md) | Marco original e possíveis extensões |
-| [Revisão histórica do design](docs/phase0-review.md) | Propostas anteriores, não instruções operacionais atuais |
-| [Trabalhos anteriores](docs/prior-art.md) | Inspiração e implementação independente |
-| [Hipóteses](docs/hypotheses.md) | Verificações e evidências do notebook |
-| [Ciclo de vida histórico](docs/lifecycle.md) | Proposta anterior, não implementada integralmente |
-| [Procedimentos experimentais](docs/spike-procedures.md) | Planos históricos de testes, não instruções atuais |
+| [Segurança da demonstração](docs/seguranca-da-demonstracao.md) | Verificação efetiva das unidades, transições administrativas e evidências em hardware |
+| [Validação em hardware](docs/validacao-em-hardware-2026-11-22.md) | Testes originais do observador |
+| [Recuperação](docs/recuperacao.md) | Diagnóstico, recuperação de interrupções e remoção |
+| [Guia de extensão](docs/extensao.md) | Experimentação segura no código dentro dos limites da demonstração |
+| [Modelo de ameaças](docs/modelo-de-ameacas.md) | Riscos, premissas e exclusões |
+| [Conclusão e escopo futuro](docs/plano-de-conclusao.md) | Marco original e possíveis extensões |
+| [Revisão histórica do design](docs/revisao-fase-0.md) | Propostas anteriores, não instruções operacionais atuais |
+| [Trabalhos anteriores](docs/trabalhos-anteriores.md) | Inspiração e implementação independente |
+| [Hipóteses](docs/hipoteses.md) | Verificações e evidências do notebook |
+| [Ciclo de vida histórico](docs/ciclo-de-vida.md) | Proposta anterior, não implementada integralmente |
+| [Procedimentos experimentais](docs/procedimentos-experimentais.md) | Planos históricos de testes, não instruções atuais |
 
 ## Créditos e licença
 

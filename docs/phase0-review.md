@@ -83,4 +83,4 @@ Open evidence questions include cancellation behavior, effective dependency prop
 
 Approval covers only the two lite spikes above. G1 later requires human-pasted S1–S4 evidence and a recorded human decision on trigger and gate form before either Phase 2 or Phase 3.
 
-[Português (Brasil)](../pt-BR/docs/phase0-review.md) · [Project overview](../README.md)
+[Português (Brasil)](../pt-BR/docs/revisao-fase-0.md) · [Project overview](../README.md)
