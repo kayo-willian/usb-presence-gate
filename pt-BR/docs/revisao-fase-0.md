@@ -1,8 +1,8 @@
-> **Pesquisa histórica de arquitetura, não instruções operacionais atuais.** O marco implementado em 22/11/2026 suporta deliberadamente apenas observação USB e o serviço descartável fixo `presence-demo.service`. Consulte o [README](../README.md) e o [escopo atual](completion-plan.md).
+> **Pesquisa histórica de arquitetura, não instruções operacionais atuais.** O marco implementado em 22/11/2026 suporta deliberadamente apenas observação USB e o serviço descartável fixo `presence-demo.service`. Consulte o [README](../README.md) e o [escopo atual](plano-de-conclusao.md).
 
 # Revisão de design da fase 0
 
-**Revisão histórica.** O MVP então proposto abrange serviços e sockets. G1 e os experimentos S3/S4 foram descontinuados. As [instruções do mantenedor](../../AGENTS.md) definem o escopo atual, e o [ciclo de vida](lifecycle.md) registra o gate e o acionamento selecionados.
+**Revisão histórica.** O MVP então proposto abrange serviços e sockets. G1 e os experimentos S3/S4 foram descontinuados. As [instruções do mantenedor](../../AGENTS.md) definem o escopo atual, e o [ciclo de vida](ciclo-de-vida.md) registra o gate e o acionamento selecionados.
 
 **Escopo aprovado (2026-11-22).** O mantenedor autorizou observação e preparação de S1-lite (serviço e socket) e S2-lite (adição, remoção, inicialização com pendrive, reconexão rápida, remoção seguida de silêncio). Os experimentos restantes exigem aprovação separada. Gate USB, acionamento, aplicação da política e semântica de recuperação ainda exigem evidências. Todo comportamento em execução proposto permanece `untested`.
 
@@ -15,7 +15,7 @@ Revisado em 22/11/2026 no commit [bdc80c9](https://github.com/kayo-willian/usb-p
 | GitHub | Uma busca autenticada de repositórios por `usb-presence-gate in:name` retornou apenas este repositório. O par proprietário/nome já pertence ao projeto. Outros proprietários podem usar o mesmo nome-base, e a visibilidade da busca é limitada. |
 | Debian | A [consulta do arquivo](https://api.ftp-master.debian.org/madison?package=usb-presence-gate) retornou HTTP 200 com zero linhas. A mesma consulta para usbguard retornou linhas do arquivo. O nome exato também estava ausente da [lista de pacotes binários Trixie](https://packages.debian.org/trixie/allpackages?format=txt.gz) e da [lista de pacotes binários sid](https://packages.debian.org/sid/allpackages?format=txt.gz), ambas contendo usbguard. |
 
-Manter o nome proposto. São verificações datadas de namespace. Não reservam um futuro nome de pacote. Consulte [trabalhos anteriores](prior-art.md) para atribuição.
+Manter o nome proposto. São verificações datadas de namespace. Não reservam um futuro nome de pacote. Consulte [trabalhos anteriores](trabalhos-anteriores.md) para atribuição.
 
 ## Riscos em ordem de consequência
 
@@ -79,7 +79,7 @@ Os drop-ins marcados formam o inventário de cadastro. Cada unidade canônica pe
 
 Questões de evidência abertas incluem comportamento de cancelamento, propagação efetiva de dependências, cadência do timer e resposta segura quando estado do gerenciador não pode ser observado.
 
-[Regras do agente](../../AGENTS.md) · [Modelo de ameaças](threat-model.md) · [Ciclo de vida](lifecycle.md) · [Hipóteses](hypotheses.md) · [Esboços de experimentos](spike-procedures.md)
+[Regras do agente](../../AGENTS.md) · [Modelo de ameaças](modelo-de-ameacas.md) · [Ciclo de vida](ciclo-de-vida.md) · [Hipóteses](hipoteses.md) · [Esboços de experimentos](procedimentos-experimentais.md)
 
 A aprovação abrange somente os dois experimentos lite acima. G1 posteriormente exige evidências S1–S4 fornecidas por uma pessoa e uma decisão humana registrada sobre acionamento e forma do gate antes da fase 2 ou fase 3.
 

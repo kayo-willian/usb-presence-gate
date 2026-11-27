@@ -183,4 +183,4 @@ rm -rf -- "$HOME/usb-presence-gate"
 This permanently deletes the **local working copy**, not the remote
 GitHub repository.
 
-[Português (Brasil)](../pt-BR/docs/recovery.md) · [Project overview](../README.md)
+[Português (Brasil)](../pt-BR/docs/recuperacao.md) · [Project overview](../README.md)

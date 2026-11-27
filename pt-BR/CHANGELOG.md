@@ -36,7 +36,7 @@ Este documento registra alterações significativas integradas ao USB Presence G
 
 ### Validação
 
-- Os testes históricos no notebook cobriram ciclo normal da demonstração, remoção/reconexão, recusa de início manual sem autorização, reinicialização com pendrive conectado, recuperação de emergência e desinstalação baseada em manifesto após recuperação. Consulte as [evidências em hardware](docs/demo-safety.md) para o escopo exato.
+- Os testes históricos no notebook cobriram ciclo normal da demonstração, remoção/reconexão, recusa de início manual sem autorização, reinicialização com pendrive conectado, recuperação de emergência e desinstalação baseada em manifesto após recuperação. Consulte as [evidências em hardware](docs/seguranca-da-demonstracao.md) para o escopo exato.
 
 [Sem lançamento]: https://github.com/kayo-willian/usb-presence-gate/commits/main/
 

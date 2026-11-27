@@ -33,4 +33,4 @@ For every case paste the date, exact command, redacted raw output, kernel, syste
 
 **Historical G1 decision record (retired).** Attach S1–S4 evidence and H3–H8 observations, note skipped cases, identify the trigger and gate variant chosen by the human, and record unresolved exposure with its consequence. A failing safety case requires revision and another observation. Phases 2 and 3 need a written human decision.
 
-[Português (Brasil)](../pt-BR/docs/spike-procedures.md) · [Project overview](../README.md)
+[Português (Brasil)](../pt-BR/docs/procedimentos-experimentais.md) · [Project overview](../README.md)

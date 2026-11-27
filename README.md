@@ -423,7 +423,7 @@ The upstream review process is deliberately conservative because the project ope
 4. Run `make test`, make your change, add relevant regression tests and rerun validation.
 5. Open a pull request targeting `main` using the repository's PR template.
 
-No physical USB device or privileged installation is necessary for ordinary development and offline testing. Keep changes focused. The README, contribution guide, code of conduct and security policy are available in English and Brazilian Portuguese in [pt-BR/](pt-BR/README.md); internal technical documentation, commits and PRs remain in English. Discuss architectural changes and new dependencies before implementation. Disclose material AI assistance and report test results honestly.
+No physical USB device or privileged installation is necessary for ordinary development and offline testing. Keep changes focused. The README, contribution guide, code of conduct and security policy are available in English and Brazilian Portuguese in [pt-BR/](pt-BR/README.md); technical documentation is also available in both languages, with English as the canonical version; commits and PRs remain in English. Discuss architectural changes and new dependencies before implementation. Disclose material AI assistance and report test results honestly.
 
 | Community resource | Purpose |
 | --- | --- |

@@ -1,6 +1,6 @@
 # Validação física no notebook Debian 13 — 2026-11-22
 
-> **Referência histórica de observação somente (PR #4).** Este arquivo preserva a sessão inicial do observador e não deve ser interpretado como o estado completo da validação da demonstração descartável posterior. Consulte as [evidências físicas da demonstração](demo-safety.md) para os testes subsequentes.
+> **Referência histórica de observação somente (PR #4).** Este arquivo preserva a sessão inicial do observador e não deve ser interpretado como o estado completo da validação da demonstração descartável posterior. Consulte as [evidências físicas da demonstração](seguranca-da-demonstracao.md) para os testes subsequentes.
 
 Este é um registro conciso de evidências dos comandos executados pelo mantenedor no notebook físico headless via SSH, **antes do commit subsequente de reforço de segurança**. Identificadores e endereços foram omitidos intencionalmente.
 

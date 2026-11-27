@@ -5,4 +5,4 @@
 
 These references describe related approaches. This review incorporates no upstream code. Check the specific upstream revision, file license and attribution obligations before considering any reuse.
 
-[Português (Brasil)](../pt-BR/docs/prior-art.md) · [Project overview](../README.md)
+[Português (Brasil)](../pt-BR/docs/trabalhos-anteriores.md) · [Project overview](../README.md)

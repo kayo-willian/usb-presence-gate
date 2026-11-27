@@ -27,4 +27,4 @@ These choices are planned and `untested` on the notebook.
 
 **Uninstall.** Require S0 or explicit recovery. Remove only confined, manifest-owned paths, leave operator data by default and keep purge a separate explicit destructive choice. Compare only the managed tree with its baseline and list retained data. All transitions, including local rescue and boot behavior, are untested.
 
-[Português (Brasil)](../pt-BR/docs/lifecycle.md) · [Project overview](../README.md)
+[Português (Brasil)](../pt-BR/docs/ciclo-de-vida.md) · [Project overview](../README.md)
